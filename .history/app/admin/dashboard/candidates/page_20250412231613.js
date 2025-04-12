@@ -148,38 +148,50 @@ export default function CandidatesPage() {
   };
 
   // Create
- const createCandidate = async (formData) => {
-   setFormSubmitting(true);
-   try {
-     const payload = {
-       ...formData,
-       electionId: String(formData.electionId), // Convert to string
-     };
+  const createCandidate = async (formData) => {
+    setFormSubmitting(true);
+    try {
+      // Client-side validation
+      const requiredFields = [
+        "name",
+        "photo",
+        "vision",
+        "mission",
+        "shortBio",
+        "electionId",
+      ];
+      const missingFields = requiredFields.filter((field) => !formData[field]);
 
-     const res = await fetch("/api/candidate/createCandidate", {
-       method: "POST",
-       headers: { "Content-Type": "application/json" },
-       body: JSON.stringify(payload),
-     });
+      if (missingFields.length > 0) {
+        throw new Error(`Missing required fields: ${missingFields.join(", ")}`);
+      }
 
-     const result = await res.json();
+      console.log("Submitting candidate data:", formData);
 
-     if (!res.ok) {
-       throw new Error(result.error || "Failed to create candidate");
-     }
+      const res = await fetch("/api/candidate/createCandidate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
 
-     toast.success(`Candidate "${formData.name}" added successfully.`);
-     setIsModalOpen(false);
-     setDataChanged((prev) => !prev);
-   } catch (err) {
-     console.error("Error creating candidate:", err);
-     toast.error(
-       err.message || "Failed to create candidate. Please try again."
-     );
-   } finally {
-     setFormSubmitting(false);
-   }
- };
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result.error || "Failed to create candidate");
+      }
+
+      toast.success(`Candidate "${formData.name}" added successfully.`);
+      setIsModalOpen(false);
+      setDataChanged((prev) => !prev);
+    } catch (err) {
+      console.error("Error creating candidate:", err);
+      toast.error(
+        err.message || "Failed to create candidate. Please try again."
+      );
+    } finally {
+      setFormSubmitting(false);
+    }
+  };
 
   // Update
   const updateCandidate = async (formData) => {
@@ -389,7 +401,7 @@ export default function CandidatesPage() {
         }}
         onSave={handleSaveCandidate}
         candidate={selectedCandidate}
-        elections={elections} // Pass the elections data here
+        elections={elections}
         isSubmitting={formSubmitting}
       />
 

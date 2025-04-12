@@ -149,37 +149,37 @@ export default function CandidatesPage() {
 
   // Create
  const createCandidate = async (formData) => {
-   setFormSubmitting(true);
-   try {
-     const payload = {
-       ...formData,
-       electionId: String(formData.electionId), // Convert to string
-     };
+  setFormSubmitting(true);
+  try {
+    const payload = {
+      ...formData,
+      electionId: String(formData.electionId), // Convert to string
+    };
 
-     const res = await fetch("/api/candidate/createCandidate", {
-       method: "POST",
-       headers: { "Content-Type": "application/json" },
-       body: JSON.stringify(payload),
-     });
+    const res = await fetch("/api/candidate/createCandidate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
 
-     const result = await res.json();
+    const result = await res.json();
 
-     if (!res.ok) {
-       throw new Error(result.error || "Failed to create candidate");
-     }
+    if (!res.ok) {
+      throw new Error(result.error || "Failed to create candidate");
+    }
 
-     toast.success(`Candidate "${formData.name}" added successfully.`);
-     setIsModalOpen(false);
-     setDataChanged((prev) => !prev);
-   } catch (err) {
-     console.error("Error creating candidate:", err);
-     toast.error(
-       err.message || "Failed to create candidate. Please try again."
-     );
-   } finally {
-     setFormSubmitting(false);
-   }
- };
+    toast.success(`Candidate "${formData.name}" added successfully.`);
+    setIsModalOpen(false);
+    setDataChanged((prev) => !prev);
+  } catch (err) {
+    console.error("Error creating candidate:", err);
+    toast.error(
+      err.message || "Failed to create candidate. Please try again."
+    );
+  } finally {
+    setFormSubmitting(false);
+  }
+};
 
   // Update
   const updateCandidate = async (formData) => {
@@ -389,7 +389,7 @@ export default function CandidatesPage() {
         }}
         onSave={handleSaveCandidate}
         candidate={selectedCandidate}
-        elections={elections} // Pass the elections data here
+        elections={elections}
         isSubmitting={formSubmitting}
       />
 
