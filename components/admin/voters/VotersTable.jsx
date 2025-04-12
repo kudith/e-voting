@@ -31,6 +31,7 @@ export default function VotersTable({
   onDelete,
   sortConfig,
   requestSort,
+  error, // Tambahkan properti error
 }) {
   // Check if all visible voters are selected
   const allSelected =
@@ -55,29 +56,15 @@ export default function VotersTable({
     );
   };
 
-  // Animation variants
-  const containerVariants = {
+  // Simple fade-in animation for the table
+  const tableAnimation = {
     hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.05,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: { type: "spring", stiffness: 100 },
-    },
+    visible: { opacity: 1, transition: { duration: 0.5 } },
   };
 
   return (
     <motion.div
-      variants={containerVariants}
+      variants={tableAnimation}
       initial="hidden"
       animate="visible"
       className="rounded-md border overflow-hidden"
@@ -89,7 +76,7 @@ export default function VotersTable({
               <TableHead className="w-[50px]">
                 <Checkbox
                   checked={allSelected}
-                  indeterminate={someSelected || undefined} // Hanya tambahkan jika `someSelected` bernilai true
+                  indeterminate={someSelected || undefined}
                   onCheckedChange={onSelectAll}
                 />
               </TableHead>
@@ -113,11 +100,20 @@ export default function VotersTable({
               </TableHead>
               <TableHead
                 className="cursor-pointer"
-                onClick={() => requestSort("nim")}
+                onClick={() => requestSort("voterCode")}
               >
                 <div className="flex items-center">
-                  NIM
-                  {getSortIcon("nim")}
+                  Kode Voter
+                  {getSortIcon("voterCode")}
+                </div>
+              </TableHead>
+              <TableHead
+                className="cursor-pointer"
+                onClick={() => requestSort("phone")}
+              >
+                <div className="flex items-center">
+                  Nomor Telepon
+                  {getSortIcon("phone")}
                 </div>
               </TableHead>
               <TableHead
@@ -156,22 +152,32 @@ export default function VotersTable({
                   {getSortIcon("votingStatus")}
                 </div>
               </TableHead>
+              <TableHead>Daftar Pemilu</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-10">
+                <TableCell colSpan={11} className="text-center py-10">
                   <div className="flex justify-center items-center h-24">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
                   </div>
                 </TableCell>
               </TableRow>
+            ) : error ? (
+              <TableRow>
+                <TableCell
+                  colSpan={11}
+                  className="text-center py-10 text-red-500"
+                >
+                  {error}
+                </TableCell>
+              </TableRow>
             ) : voters.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={9}
+                  colSpan={11}
                   className="text-center py-10 text-muted-foreground"
                 >
                   No voters found
@@ -179,9 +185,8 @@ export default function VotersTable({
               </TableRow>
             ) : (
               voters.map((voter) => (
-                <motion.tr
+                <TableRow
                   key={voter.id}
-                  variants={itemVariants}
                   className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
                 >
                   <TableCell>
@@ -194,10 +199,11 @@ export default function VotersTable({
                   </TableCell>
                   <TableCell className="font-medium">{voter.name}</TableCell>
                   <TableCell>{voter.email}</TableCell>
-                  <TableCell>{voter.nim}</TableCell>
-                  <TableCell>{voter.fakultas}</TableCell>
-                  <TableCell>{voter.jurusan}</TableCell>
-                  <TableCell>{voter.angkatan}</TableCell>
+                  <TableCell>{voter.voterCode}</TableCell>
+                  <TableCell>{voter.phone}</TableCell>
+                  <TableCell>{voter.faculty?.name || "N/A"}</TableCell>
+                  <TableCell>{voter.major?.name || "N/A"}</TableCell>
+                  <TableCell>{voter.year}</TableCell>
                   <TableCell>
                     <span
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -219,6 +225,20 @@ export default function VotersTable({
                       )}
                     </span>
                   </TableCell>
+                  <TableCell>
+                    {voter.voterElections.length > 0 ? (
+                      <ul className="list-disc pl-4">
+                        {voter.voterElections.map((ve) => (
+                          <li key={ve.id}>
+                            {ve.election?.title || "Unknown Election"}{" "}
+                            {ve.eligible ? "(Eligible)" : "(Not Eligible)"}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      "No Elections"
+                    )}
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Button
@@ -239,7 +259,7 @@ export default function VotersTable({
                       </Button>
                     </div>
                   </TableCell>
-                </motion.tr>
+                </TableRow>
               ))
             )}
           </TableBody>

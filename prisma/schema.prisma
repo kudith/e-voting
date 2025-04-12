@@ -7,59 +7,122 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum VoterStatus {
+  active
+  inactive
+}
+
+model Faculty {
+  id     String  @id @default(auto()) @map("_id") @db.ObjectId
+  name   String  @unique
+  majors Major[]
+  voters Voter[] @relation("FacultyToVoter")
+}
+
+model Major {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  facultyId String  @db.ObjectId
+  faculty   Faculty @relation(fields: [facultyId], references: [id])
+  voters    Voter[] @relation("MajorToVoter")
+}
+
 model Admin {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   kindeId   String   @unique
   username  String   @unique
   email     String   @unique
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Voter {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  kindeId   String   @unique
-  nim       String   @unique
+  id        String      @id @default(auto()) @map("_id") @db.ObjectId
+  kindeId   String      @unique
+  voterCode String      @unique
   name      String
-  email     String   @unique
-  phone     String   
-  fakultas  String
-  jurusan   String
-  angkatan  String
-  status    String   @default("aktif")
-  voted     Boolean  @default(false)
-  createdAt DateTime @default(now())
+  email     String      @unique
+  phone     String
+  facultyId String      @db.ObjectId
+  faculty   Faculty     @relation("FacultyToVoter", fields: [facultyId], references: [id])
+  majorId   String      @db.ObjectId
+  major     Major       @relation("MajorToVoter", fields: [majorId], references: [id])
+  year      String
+  status    VoterStatus @default(active)
+  voted     Boolean     @default(false)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
 
-  vote      Vote?
+  vote            Vote?
+  voterElections  VoterElection[] // <- Tambahan relasi
 }
 
 model Candidate {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  name      String
-  photo     String
-  vision    String
-  mission   String
-  createdAt DateTime @default(now())
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  photo       String
+  vision      String
+  mission     String
+  shortBio    String
+  voteCount   Int       @default(0)
+  electionId  String    @db.ObjectId
+  election    Election  @relation(fields: [electionId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-  votes     Vote[]
+  votes       Vote[]
 }
 
 model Vote {
-  id           String   @id @default(auto()) @map("_id") @db.ObjectId
-  voterId      String   @unique @db.ObjectId
-  candidateId  String   @db.ObjectId
-  hashVote     String
-  timestamp    DateTime @default(now())
+  id            String     @id @default(auto()) @map("_id") @db.ObjectId
+  voterId       String     @unique @db.ObjectId
+  candidateId   String     @db.ObjectId
+  electionId    String     @db.ObjectId
+  hashVote      String
+  zkProof       String?
+  nullifierHash String?
+  timestamp     DateTime   @default(now())
 
-  voter        Voter?     @relation(fields: [voterId], references: [id])
-  candidate    Candidate? @relation(fields: [candidateId], references: [id])
+  voter     Voter?     @relation(fields: [voterId], references: [id])
+  candidate Candidate? @relation(fields: [candidateId], references: [id])
+  election  Election?  @relation(fields: [electionId], references: [id])
+}
+
+model Election {
+  id          String          @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String
+  startDate   DateTime
+  endDate     DateTime
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  candidates      Candidate[]
+  votes           Vote[]
+  voterElections  VoterElection[] 
+}
+
+model VoterElection {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  voterId    String   @db.ObjectId
+  electionId String   @db.ObjectId
+  eligible   Boolean  @default(true)
+
+  voter      Voter    @relation(fields: [voterId], references: [id])
+  election   Election @relation(fields: [electionId], references: [id])
+
+  @@unique([voterId, electionId]) // Supaya gak ganda
 }
 
 model MerkleTree {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  voteHash  String   @unique
-  level     Int
-  parentId  String?  @db.ObjectId
+  id         String  @id @default(auto()) @map("_id") @db.ObjectId
+  voteHash   String  @unique
+  level      Int
+  position   Int
+  parentId   String? @db.ObjectId
+  parentHash String?
+  root       Boolean @default(false)
 
-  parent    MerkleTree?   @relation("ParentChild", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  children  MerkleTree[]  @relation("ParentChild")
+  parent   MerkleTree?  @relation("ParentChild", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children MerkleTree[] @relation("ParentChild")
 }

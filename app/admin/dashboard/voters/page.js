@@ -49,6 +49,7 @@ export default function VotersPage() {
   const [selectedVoters, setSelectedVoters] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [error, setError] = useState(null);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -58,6 +59,7 @@ export default function VotersPage() {
   useEffect(() => {
     const fetchVoters = async () => {
       setIsLoading(true);
+      setError(null);
       try {
         const response = await fetch("/api/voter/getAllVoters");
         if (!response.ok) {
@@ -67,11 +69,7 @@ export default function VotersPage() {
         setVoters(data);
       } catch (error) {
         console.error("Error fetching voters:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load voters data. Please try again later.",
-          variant: "destructive",
-        });
+        setError("Tidak ada data pemilih");
       } finally {
         setIsLoading(false);
       }
@@ -90,7 +88,7 @@ export default function VotersPage() {
         (voter) =>
           voter.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           voter.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          voter.nim.includes(searchQuery)
+          voter.voterCode.includes(searchQuery)
       );
     }
 
@@ -146,7 +144,7 @@ export default function VotersPage() {
   };
 
   return (
-    <div className="container mx-auto py-8 px-4 max-w-7xl">
+    <div className="container mx-auto py-8 px-4">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -156,10 +154,10 @@ export default function VotersPage() {
           <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <CardTitle className="text-2xl font-bold">
-                Voters Management
+                Manajemen Pemilih
               </CardTitle>
               <CardDescription>
-                Manage registered voters for the election
+                Mengelola pemilih yang terdaftar untuk pemilu
               </CardDescription>
             </div>
             <div className="flex flex-col sm:flex-row gap-4 sm:items-center">
@@ -205,68 +203,77 @@ export default function VotersPage() {
                   checked ? paginatedVoters.map((v) => v.id) : []
                 )
               }
-              onEdit={(voter) => setSelectedVoter(voter)}
+              onEdit={(voter) => {
+                setSelectedVoter(voter); // Pastikan voter diterima dan disimpan di state
+                setIsModalOpen(true); // Buka modal untuk mengedit voter
+              }}
               onDelete={(voter) => {
                 setSelectedVoter(voter);
                 setIsDeleteDialogOpen(true);
               }}
               sortConfig={sortConfig}
               requestSort={requestSort}
+              error={error}
             />
-      {/* Pagination and Rows Per Page */}
-      <div className="flex items-center justify-between mt-4">
-        <Select onValueChange={handleRowsPerPageChange}>
-          <SelectTrigger className="w-[120px]">
-            <SelectValue placeholder={`${rowsPerPage} rows`} />
-          </SelectTrigger>
-          <SelectContent>
-            {[10, 20, 30, 40, 50, 100].map((size) => (
-              <SelectItem key={size} value={size.toString()}>
-                {size} rows
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Pagination className={"flex items-center justify-end"}>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious
-                href="#"
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-              />
-            </PaginationItem>
-            {Array.from(
-              { length: Math.ceil(getFilteredAndSortedVoters().length / rowsPerPage) },
-              (_, index) => (
-                <PaginationItem key={index}>
-                  <PaginationLink
-                    href="#"
-                    isActive={currentPage === index + 1}
-                    onClick={() => handlePageChange(index + 1)}
-                  >
-                    {index + 1}
-                  </PaginationLink>
-                </PaginationItem>
-              )
-            )}
-            <PaginationItem>
-              <PaginationNext
-                href="#"
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={
-                  currentPage ===
-                  Math.ceil(getFilteredAndSortedVoters().length / rowsPerPage)
-                }
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-      </div>
+            {/* Pagination and Rows Per Page */}
+            <div className="flex items-center justify-between mt-4">
+              <Select onValueChange={handleRowsPerPageChange}>
+                <SelectTrigger className="w-[120px]">
+                  <SelectValue placeholder={`${rowsPerPage} rows`} />
+                </SelectTrigger>
+                <SelectContent>
+                  {[10, 20, 30, 40, 50, 100].map((size) => (
+                    <SelectItem key={size} value={size.toString()}>
+                      {size} rows
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Pagination className={"flex items-center justify-end"}>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      href="#"
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                    />
+                  </PaginationItem>
+                  {Array.from(
+                    {
+                      length: Math.ceil(
+                        getFilteredAndSortedVoters().length / rowsPerPage
+                      ),
+                    },
+                    (_, index) => (
+                      <PaginationItem key={index}>
+                        <PaginationLink
+                          href="#"
+                          isActive={currentPage === index + 1}
+                          onClick={() => handlePageChange(index + 1)}
+                        >
+                          {index + 1}
+                        </PaginationLink>
+                      </PaginationItem>
+                    )
+                  )}
+                  <PaginationItem>
+                    <PaginationNext
+                      href="#"
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={
+                        currentPage ===
+                        Math.ceil(
+                          getFilteredAndSortedVoters().length / rowsPerPage
+                        )
+                      }
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
           </CardContent>
         </Card>
       </motion.div>
-
 
       {/* Voter Form Modal */}
       <VoterForm
@@ -276,7 +283,9 @@ export default function VotersPage() {
           if (selectedVoter) {
             setVoters((prev) =>
               prev.map((voter) =>
-                voter.id === selectedVoter.id ? { ...voter, ...formData } : voter
+                voter.id === selectedVoter.id
+                  ? { ...voter, ...formData }
+                  : voter
               )
             );
             toast({

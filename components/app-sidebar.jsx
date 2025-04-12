@@ -56,6 +56,16 @@ const data = {
       icon: IconListDetails,
     },
     {
+      title: "Pemilu", // Menu baru
+      url: "/admin/elections",
+      icon: IconDatabase,
+    },
+    {
+      title: "Hak Pilih", // Menu baru
+      url: "/admin/voting-rights",
+      icon: IconFolder,
+    },
+    {
       title: "Pengaturan Voting",
       url: "/admin/dashboard/voting-settings",
       icon: IconSettings,
