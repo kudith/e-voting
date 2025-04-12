@@ -6,7 +6,7 @@ import dotenv from "dotenv";
 dotenv.config();
 const prisma = new PrismaClient();
 
-// Zod schema
+// Zod schema untuk validasi input
 const candidateSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters"),
   photo: z.string().url("Invalid photo URL"),
@@ -24,23 +24,40 @@ export async function POST(req) {
     // Validasi keberadaan election
     const election = await prisma.election.findUnique({ where: { id: data.electionId } });
     if (!election) {
-      return NextResponse.json({ error: "Election not found." }, { status: 400 });
+      return NextResponse.json({ error: "Election not found." }, { status: 404 });
     }
 
-    // Validasi apakah kandidat sudah terdaftar di pemilu lain
-    const existingCandidate = await prisma.candidate.findFirst({
+    // Validasi apakah kandidat sudah terdaftar di pemilu yang sama
+    const existingCandidateInElection = await prisma.candidate.findFirst({
       where: {
         name: data.name,
-        electionId: { not: data.electionId }, // Kandidat dengan nama yang sama di pemilu lain
+        electionId: data.electionId,
       },
     });
 
-    if (existingCandidate) {
+    if (existingCandidateInElection) {
+      return NextResponse.json(
+        { error: "Candidate with the same name is already registered in this election." },
+        { status: 400 }
+      );
+    }
+
+    // Validasi apakah kandidat sudah terdaftar di pemilu lain
+    const existingCandidateInOtherElection = await prisma.candidate.findFirst({
+      where: {
+        name: data.name,
+        electionId: { not: data.electionId },
+      },
+    });
+
+    if (existingCandidateInOtherElection) {
       return NextResponse.json(
         { error: "Candidate is already registered in another election." },
         { status: 400 }
       );
     }
+
+    console.log("Creating a new candidate with data:", data);
 
     // Buat kandidat baru
     const newCandidate = await prisma.candidate.create({
@@ -54,16 +71,29 @@ export async function POST(req) {
       },
     });
 
+    console.log("Candidate created successfully:", newCandidate);
+
     return NextResponse.json(
       { message: "Candidate created successfully", candidate: newCandidate },
       { status: 201 }
     );
   } catch (err) {
     if (err instanceof z.ZodError) {
+      // Tangani error validasi Zod
       return NextResponse.json({ errors: err.errors }, { status: 400 });
     }
 
     console.error("[ERROR CREATING CANDIDATE]", err);
+
+    // Tangani error Prisma
+    if (err.code === "P2002") {
+      return NextResponse.json(
+        { error: "A unique constraint violation occurred. Candidate might already exist." },
+        { status: 400 }
+      );
+    }
+
+    // Tangani error lainnya
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

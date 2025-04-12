@@ -7,11 +7,12 @@ const prisma = new PrismaClient();
 // Zod schema untuk validasi input
 const updateCandidateSchema = z.object({
   id: z.string().min(1, "Candidate ID is required"),
-  name: z.string().optional(),
+  name: z.string().min(3, "Name must be at least 3 characters").optional(),
   photo: z.string().url("Invalid photo URL").optional(),
   vision: z.string().min(10, "Vision must be at least 10 characters").optional(),
   mission: z.string().min(10, "Mission must be at least 10 characters").optional(),
   shortBio: z.string().min(10, "Short bio must be at least 10 characters").optional(),
+  electionId: z.string().optional(),
 });
 
 export async function PATCH(req) {
@@ -27,6 +28,32 @@ export async function PATCH(req) {
 
     console.log(`Updating candidate with ID: ${data.id}`);
 
+    // Jika `electionId` diberikan, validasi keberadaan election
+    if (data.electionId) {
+      const election = await prisma.election.findUnique({ where: { id: data.electionId } });
+      if (!election) {
+        return NextResponse.json({ error: "Election not found." }, { status: 404 });
+      }
+
+      // Validasi apakah kandidat sudah terdaftar di pemilu lain
+      const existingCandidateInElection = await prisma.candidate.findFirst({
+        where: {
+          name: data.name || candidate.name,
+          electionId: data.electionId,
+          NOT: { id: data.id }, // Pastikan tidak memeriksa kandidat yang sedang diperbarui
+        },
+      });
+
+      if (existingCandidateInElection) {
+        return NextResponse.json(
+          { error: "Candidate with the same name is already registered in this election." },
+          { status: 400 }
+        );
+      }
+
+      console.log(`Candidate will now participate in election with ID: ${data.electionId}`);
+    }
+
     // Perbarui kandidat
     const updatedCandidate = await prisma.candidate.update({
       where: { id: data.id },
@@ -36,6 +63,7 @@ export async function PATCH(req) {
         vision: data.vision || candidate.vision,
         mission: data.mission || candidate.mission,
         shortBio: data.shortBio || candidate.shortBio,
+        electionId: data.electionId || candidate.electionId, // Update electionId jika diberikan
       },
     });
 
@@ -48,10 +76,21 @@ export async function PATCH(req) {
     );
   } catch (err) {
     if (err instanceof z.ZodError) {
+      // Tangani error validasi Zod
       return NextResponse.json({ errors: err.errors }, { status: 400 });
     }
 
     console.error("[ERROR UPDATING CANDIDATE]", err);
+
+    // Tangani error Prisma
+    if (err.code === "P2025") {
+      return NextResponse.json(
+        { error: "Candidate not found or already deleted." },
+        { status: 404 }
+      );
+    }
+
+    // Tangani error lainnya
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

@@ -43,9 +43,6 @@ export async function GET() {
                 ? {
                       id: candidate.election.id,
                       title: candidate.election.title,
-                      description: candidate.election.description,
-                      startDate: candidate.election.startDate,
-                      endDate: candidate.election.endDate,
                   }
                 : null, // Include election details if available
             createdAt: candidate.createdAt,
