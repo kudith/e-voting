@@ -5,22 +5,24 @@ const prisma = new PrismaClient();
 
 export async function GET() {
     try {
-        console.log("Fetching all elections with candidates...");
+        console.log("Fetching all elections with essential fields...");
 
-        // Fetch all elections with their candidates
+        // Fetch all elections with selected fields and their candidates
         const elections = await prisma.election.findMany({
-            include: {
+            select: {
+                id: true,
+                title: true,
+                description: true,
+                startDate: true,
+                endDate: true,
+                status: true,
+                totalVotes: true,
                 candidates: {
                     select: {
                         id: true,
                         name: true,
                         photo: true,
-                        vision: true,
-                        mission: true,
-                        shortBio: true,
                         voteCount: true,
-                        createdAt: true,
-                        updatedAt: true,
                     },
                 },
             },
@@ -41,22 +43,17 @@ export async function GET() {
             description: election.description,
             startDate: election.startDate,
             endDate: election.endDate,
-            createdAt: election.createdAt,
-            updatedAt: election.updatedAt,
+            status: election.status,
+            totalVotes: election.totalVotes,
             candidates: election.candidates.map((candidate) => ({
                 id: candidate.id,
                 name: candidate.name,
                 photo: candidate.photo,
-                vision: candidate.vision,
-                mission: candidate.mission,
-                shortBio: candidate.shortBio,
                 voteCount: candidate.voteCount,
-                createdAt: candidate.createdAt,
-                updatedAt: candidate.updatedAt,
             })),
         }));
 
-        console.log("Successfully retrieved all elections with candidates.");
+        console.log("Successfully retrieved all elections with essential fields.");
         return NextResponse.json(formattedElections, { status: 200 });
     } catch (error) {
         console.error("An error occurred while fetching elections:", error);

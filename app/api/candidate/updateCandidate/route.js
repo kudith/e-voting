@@ -55,7 +55,7 @@ export async function PATCH(req) {
     }
 
     // Perbarui kandidat
-    const updatedCandidate = await prisma.candidate.update({
+    await prisma.candidate.update({
       where: { id: data.id },
       data: {
         name: data.name || candidate.name,
@@ -67,17 +67,21 @@ export async function PATCH(req) {
       },
     });
 
-    console.log("Successfully updated candidate:", updatedCandidate);
+    console.log("Candidate updated successfully");
 
-    // Kembalikan respons sukses
+    // Respons sukses yang profesional
     return NextResponse.json(
-      { message: "Candidate updated successfully.", candidate: updatedCandidate },
+      { message: "Candidate updated successfully." },
       { status: 200 }
     );
   } catch (err) {
     if (err instanceof z.ZodError) {
       // Tangani error validasi Zod
-      return NextResponse.json({ errors: err.errors }, { status: 400 });
+      console.error("Validation Error:", err.errors);
+      return NextResponse.json(
+        { errors: err.errors.map((e) => e.message) },
+        { status: 400 }
+      );
     }
 
     console.error("[ERROR UPDATING CANDIDATE]", err);

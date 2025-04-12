@@ -22,9 +22,14 @@ export async function POST(req) {
     const data = candidateSchema.parse(body);
 
     // Validasi keberadaan election
-    const election = await prisma.election.findUnique({ where: { id: data.electionId } });
+    const election = await prisma.election.findUnique({
+      where: { id: data.electionId },
+    });
     if (!election) {
-      return NextResponse.json({ error: "Election not found." }, { status: 404 });
+      return NextResponse.json(
+        { error: "Election not found." },
+        { status: 404 }
+      );
     }
 
     // Validasi apakah kandidat sudah terdaftar di pemilu yang sama
@@ -34,25 +39,11 @@ export async function POST(req) {
         electionId: data.electionId,
       },
     });
-
     if (existingCandidateInElection) {
       return NextResponse.json(
-        { error: "Candidate with the same name is already registered in this election." },
-        { status: 400 }
-      );
-    }
-
-    // Validasi apakah kandidat sudah terdaftar di pemilu lain
-    const existingCandidateInOtherElection = await prisma.candidate.findFirst({
-      where: {
-        name: data.name,
-        electionId: { not: data.electionId },
-      },
-    });
-
-    if (existingCandidateInOtherElection) {
-      return NextResponse.json(
-        { error: "Candidate is already registered in another election." },
+        {
+          error: "Candidate with the same name is already registered in this election.",
+        },
         { status: 400 }
       );
     }
@@ -60,7 +51,7 @@ export async function POST(req) {
     console.log("Creating a new candidate with data:", data);
 
     // Buat kandidat baru
-    const newCandidate = await prisma.candidate.create({
+    await prisma.candidate.create({
       data: {
         name: data.name,
         photo: data.photo,
@@ -71,16 +62,21 @@ export async function POST(req) {
       },
     });
 
-    console.log("Candidate created successfully:", newCandidate);
+    console.log("Candidate created successfully");
 
+    // Respons sukses yang profesional
     return NextResponse.json(
-      { message: "Candidate created successfully", candidate: newCandidate },
+      { message: "Candidate created successfully" },
       { status: 201 }
     );
   } catch (err) {
     if (err instanceof z.ZodError) {
       // Tangani error validasi Zod
-      return NextResponse.json({ errors: err.errors }, { status: 400 });
+      console.error("Validation Error:", err.errors);
+      return NextResponse.json(
+        { errors: err.errors.map((e) => e.message) },
+        { status: 400 }
+      );
     }
 
     console.error("[ERROR CREATING CANDIDATE]", err);
@@ -88,12 +84,17 @@ export async function POST(req) {
     // Tangani error Prisma
     if (err.code === "P2002") {
       return NextResponse.json(
-        { error: "A unique constraint violation occurred. Candidate might already exist." },
+        {
+          error: "A unique constraint violation occurred. Candidate might already exist.",
+        },
         { status: 400 }
       );
     }
 
     // Tangani error lainnya
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }

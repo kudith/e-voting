@@ -7,23 +7,40 @@ export async function GET() {
     try {
         console.log("Fetching all voters data...");
 
-        // Fetch all voter data with faculty, major, and voterElections details
+        // Fetch all voter data with faculty, major, voterElections, and votes details
         const voters = await prisma.voter.findMany({
             include: {
                 faculty: {
                     select: {
-                        id: true,
-                        name: true, // Include faculty ID and name
+                        name: true, 
                     },
                 },
                 major: {
                     select: {
-                        id: true,
-                        name: true, // Include major ID and name
+                        name: true,
                     },
                 },
                 voterElections: {
                     include: {
+                        election: {
+                            select: {
+                                id: true,
+                                title: true, // Include election ID and title
+                                startDate: true,
+                                endDate: true,
+                                status: true, // Include election status
+                            },
+                        },
+                    },
+                },
+                votes: {
+                    include: {
+                        candidate: {
+                            select: {
+                                id: true,
+                                name: true, // Include candidate ID and name
+                            },
+                        },
                         election: {
                             select: {
                                 id: true,
@@ -43,7 +60,7 @@ export async function GET() {
             );
         }
 
-        // Map the response to include faculty, major, and voterElections as objects
+        // Map the response to include faculty, major, voterElections, and votes as objects
         const formattedVoters = voters.map((voter) => ({
             id: voter.id,
             kindeId: voter.kindeId,
@@ -59,13 +76,19 @@ export async function GET() {
                 : null, // Include major as an object
             year: voter.year,
             status: voter.status,
-            voted: voter.voted,
             voterElections: voter.voterElections.map((ve) => ({
                 id: ve.id,
                 election: ve.election
-                    ? { id: ve.election.id, title: ve.election.title }
+                    ? {
+                          id: ve.election.id,
+                          title: ve.election.title,
+                          startDate: ve.election.startDate,
+                          endDate: ve.election.endDate,
+                          status: ve.election.status,
+                      }
                     : null, // Include election details
-                eligible: ve.eligible,
+                isEligible: ve.isEligible,
+                hasVoted: ve.hasVoted,
             })),
             createdAt: voter.createdAt,
             updatedAt: voter.updatedAt,

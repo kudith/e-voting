@@ -31,9 +31,10 @@ export async function PATCH(req) {
     console.log(`Updating election with ID: ${data.id}`);
 
     // Validasi jika tanggal mulai dan akhir diberikan
-    if (data.startDate && data.endDate) {
-      const startDate = new Date(data.startDate);
-      const endDate = new Date(data.endDate);
+    if (data.startDate || data.endDate) {
+      const startDate = data.startDate ? new Date(data.startDate) : new Date(election.startDate);
+      const endDate = data.endDate ? new Date(data.endDate) : new Date(election.endDate);
+
       if (startDate >= endDate) {
         return NextResponse.json(
           { error: "Start date must be earlier than end date." },
@@ -42,27 +43,47 @@ export async function PATCH(req) {
       }
     }
 
+    // Tentukan status pemilu berdasarkan tanggal baru (jika diperbarui)
+    const currentDate = new Date();
+    const startDate = data.startDate ? new Date(data.startDate) : new Date(election.startDate);
+    const endDate = data.endDate ? new Date(data.endDate) : new Date(election.endDate);
+
+    let status = election.status; // Default ke status saat ini
+    if (currentDate < startDate) {
+      status = "upcoming";
+    } else if (currentDate >= startDate && currentDate <= endDate) {
+      status = "ongoing";
+    } else if (currentDate > endDate) {
+      status = "completed";
+    }
+
     // Perbarui election
-    const updatedElection = await prisma.election.update({
+    await prisma.election.update({
       where: { id: data.id },
       data: {
         title: data.title || election.title,
         description: data.description || election.description,
         startDate: data.startDate ? new Date(data.startDate) : election.startDate,
         endDate: data.endDate ? new Date(data.endDate) : election.endDate,
+        status, // Perbarui status berdasarkan tanggal
       },
     });
 
-    console.log("Election updated successfully:", updatedElection);
+    console.log("Election updated successfully");
 
-    // Kembalikan respons sukses
+    // Respons sukses yang profesional
     return NextResponse.json(
-      { message: "Election updated successfully.", election: updatedElection },
+      { message: "Election updated successfully." },
       { status: 200 }
     );
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return NextResponse.json({ errors: err.errors }, { status: 400 });
+      // Tangani error validasi Zod
+      console.error("Validation Error:", err.errors);
+      return NextResponse.json(
+        { errors: err.errors.map((e) => e.message) },
+        { status: 400 }
+      );
     }
 
     console.error("[ERROR UPDATING ELECTION]", err);
