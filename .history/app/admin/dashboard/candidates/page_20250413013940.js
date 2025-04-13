@@ -382,16 +382,16 @@ export default function CandidatesPage() {
 
       {/* Form Modal */}
       <CandidatesForm
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setSelectedCandidate(null);
-        }}
-        onSave={handleSaveCandidate}
-        candidate={selectedCandidate}
-        elections={elections} // Pass the elections data here
-        isSubmitting={formSubmitting}
-      />
+  isOpen={isModalOpen}
+  onClose={() => {
+    setIsModalOpen(false);
+    setSelectedCandidate(null);
+  }}
+  onSave={handleSaveCandidate}
+  candidate={selectedCandidate}
+  elections={elections} // Pass the elections data here
+  isSubmitting={formSubmitting}
+/>
 
       {/* Delete Confirmation */}
       <DeleteConfirmation

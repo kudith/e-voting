@@ -22,14 +22,13 @@ import { Button } from "@/components/ui/button";
 export default function CandidatesPage() {
   // Data state
   const [candidates, setCandidates] = useState([]);
-  const [elections, setElections] = useState([]);
   const [dataChanged, setDataChanged] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
   // Sort, filter, pagination state
   const [sortConfig, setSortConfig] = useState({
-    key: "name",
+    key: null,
     direction: "ascending",
   });
   const [searchQuery, setSearchQuery] = useState("");
@@ -42,7 +41,6 @@ export default function CandidatesPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [selectedCandidates, setSelectedCandidates] = useState([]);
-  const [formSubmitting, setFormSubmitting] = useState(false);
 
   // Fetch all candidates
   useEffect(() => {
@@ -54,7 +52,7 @@ export default function CandidatesPage() {
         const data = await res.json();
         setCandidates(data);
       } catch (err) {
-        console.error("Error fetching candidates:", err);
+        console.error(err);
         setError("Failed to load candidates.");
       } finally {
         setIsLoading(false);
@@ -64,64 +62,30 @@ export default function CandidatesPage() {
     fetchCandidates();
   }, [dataChanged]);
 
-  // Fetch all elections
-  useEffect(() => {
-    const fetchElections = async () => {
-      try {
-        const res = await fetch("/api/election/getAllElections");
-        if (!res.ok) throw new Error("Failed to fetch elections");
-        const data = await res.json();
-        setElections(data);
-      } catch (err) {
-        console.error("Error fetching elections:", err);
-        toast.error("Failed to load elections. Please refresh the page.");
-      }
-    };
-
-    fetchElections();
-  }, []);
-
   // Filtering and sorting logic
   const getFilteredAndSortedCandidates = () => {
     let filtered = [...candidates];
 
-    // Apply status filter if not 'all'
-    if (statusFilter !== "all") {
-      filtered = filtered.filter((c) => c.status === statusFilter);
-    }
-
-    // Apply search filter
     if (searchQuery) {
       filtered = filtered.filter((c) =>
         c.name.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
-    // Apply sorting
     if (sortConfig.key) {
       filtered.sort((a, b) => {
-        const aVal = a[sortConfig.key] || "";
-        const bVal = b[sortConfig.key] || "";
-
-        if (typeof aVal === "string" && typeof bVal === "string") {
-          return sortConfig.direction === "ascending"
-            ? aVal.localeCompare(bVal)
-            : bVal.localeCompare(aVal);
-        } else {
-          if (aVal < bVal) return sortConfig.direction === "ascending" ? -1 : 1;
-          if (aVal > bVal) return sortConfig.direction === "ascending" ? 1 : -1;
-          return 0;
-        }
+        const aVal = a[sortConfig.key];
+        const bVal = b[sortConfig.key];
+        if (aVal < bVal) return sortConfig.direction === "ascending" ? -1 : 1;
+        if (aVal > bVal) return sortConfig.direction === "ascending" ? 1 : -1;
+        return 0;
       });
     }
 
     return filtered;
   };
 
-  const filteredCandidates = getFilteredAndSortedCandidates();
-  const totalPages = Math.ceil(filteredCandidates.length / rowsPerPage);
-
-  const paginatedCandidates = filteredCandidates.slice(
+  const paginatedCandidates = getFilteredAndSortedCandidates().slice(
     (currentPage - 1) * rowsPerPage,
     currentPage * rowsPerPage
   );
@@ -137,7 +101,8 @@ export default function CandidatesPage() {
 
   // Pagination
   const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) {
+    const maxPage = Math.ceil(candidates.length / rowsPerPage);
+    if (page >= 1 && page <= maxPage) {
       setCurrentPage(page);
     }
   };
@@ -148,82 +113,55 @@ export default function CandidatesPage() {
   };
 
   // Create
- const createCandidate = async (formData) => {
-   setFormSubmitting(true);
-   try {
-     const payload = {
-       ...formData,
-       electionId: String(formData.electionId), // Convert to string
-     };
+  const createCandidate = async (formData) => {
+    try {
+      console.log("Sending data to API:", formData); // Log data yang dikirim
 
-     const res = await fetch("/api/candidate/createCandidate", {
-       method: "POST",
-       headers: { "Content-Type": "application/json" },
-       body: JSON.stringify(payload),
-     });
+      const res = await fetch("/api/candidate/createCandidate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
 
-     const result = await res.json();
+      console.log("API response status:", res.status); // Log status respons
 
-     if (!res.ok) {
-       throw new Error(result.error || "Failed to create candidate");
-     }
+      if (!res.ok) {
+        const errData = await res.json();
+        console.error("API error response:", errData); // Log error dari API
+        throw new Error(errData.error || "Failed to create candidate");
+      }
 
-     toast.success(`Candidate "${formData.name}" added successfully.`);
-     setIsModalOpen(false);
-     setDataChanged((prev) => !prev);
-   } catch (err) {
-     console.error("Error creating candidate:", err);
-     toast.error(
-       err.message || "Failed to create candidate. Please try again."
-     );
-   } finally {
-     setFormSubmitting(false);
-   }
- };
+      const result = await res.json();
+      console.log("API success response:", result); // Log respons sukses
+      toast.success(`Candidate "${formData.name}" added.`);
+      setIsModalOpen(false);
+      setDataChanged((prev) => !prev);
+    } catch (err) {
+      console.error("Error creating candidate:", err); // Log error di frontend
+      toast.error(err.message || "Failed to create candidate.");
+    }
+  };
 
   // Update
   const updateCandidate = async (formData) => {
-    setFormSubmitting(true);
     try {
-      // Client-side validation
-      const requiredFields = [
-        "name",
-        "photo",
-        "vision",
-        "mission",
-        "shortBio",
-        "electionId",
-      ];
-      const missingFields = requiredFields.filter((field) => !formData[field]);
-
-      if (missingFields.length > 0) {
-        throw new Error(`Missing required fields: ${missingFields.join(", ")}`);
-      }
-
-      console.log("Updating candidate data:", formData);
-
       const res = await fetch("/api/candidate/updateCandidate", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
 
-      const result = await res.json();
-
       if (!res.ok) {
-        throw new Error(result.error || "Failed to update candidate");
+        const errData = await res.json();
+        throw new Error(errData.error || "Failed to update candidate");
       }
 
-      toast.success(`Candidate "${formData.name}" updated successfully.`);
+      const result = await res.json();
+      toast.success(`Candidate "${formData.name}" updated.`);
       setIsModalOpen(false);
       setDataChanged((prev) => !prev);
     } catch (err) {
-      console.error("Error updating candidate:", err);
-      toast.error(
-        err.message || "Failed to update candidate. Please try again."
-      );
-    } finally {
-      setFormSubmitting(false);
+      toast.error(err.message || "Failed to update candidate.");
     }
   };
 
@@ -234,60 +172,16 @@ export default function CandidatesPage() {
         method: "DELETE",
       });
 
-      const result = await res.json();
-
       if (!res.ok) {
-        throw new Error(result.error || "Failed to delete candidate");
+        const errData = await res.json();
+        throw new Error(errData.error || "Failed to delete candidate");
       }
 
-      toast.success("Candidate deleted successfully.");
+      toast.success("Candidate deleted.");
       setIsDeleteDialogOpen(false);
-      setSelectedCandidate(null);
       setDataChanged((prev) => !prev);
     } catch (err) {
-      console.error("Error deleting candidate:", err);
-      toast.error(
-        err.message || "Failed to delete candidate. Please try again."
-      );
-    }
-  };
-
-  // Bulk delete
-  const bulkDeleteCandidates = async () => {
-    if (selectedCandidates.length === 0) return;
-
-    try {
-      const res = await fetch("/api/candidate/bulkDeleteCandidates", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: selectedCandidates }),
-      });
-
-      const result = await res.json();
-
-      if (!res.ok) {
-        throw new Error(result.error || "Failed to delete candidates");
-      }
-
-      toast.success(
-        `${selectedCandidates.length} candidates deleted successfully.`
-      );
-      setSelectedCandidates([]);
-      setDataChanged((prev) => !prev);
-    } catch (err) {
-      console.error("Error bulk deleting candidates:", err);
-      toast.error(
-        err.message || "Failed to delete candidates. Please try again."
-      );
-    }
-  };
-
-  // Handle form submission
-  const handleSaveCandidate = (formData) => {
-    if (selectedCandidate) {
-      updateCandidate({ id: selectedCandidate.id, ...formData });
-    } else {
-      createCandidate(formData);
+      toast.error(err.message || "Failed to delete candidate.");
     }
   };
 
@@ -321,29 +215,6 @@ export default function CandidatesPage() {
             </div>
           </CardHeader>
           <CardContent>
-            {selectedCandidates.length > 0 && (
-              <div className="mb-4 p-2 bg-red-50 rounded-md flex items-center justify-between">
-                <span className="text-sm text-red-600">
-                  {selectedCandidates.length} candidate(s) selected
-                </span>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => {
-                    if (
-                      confirm(
-                        `Are you sure you want to delete ${selectedCandidates.length} candidates?`
-                      )
-                    ) {
-                      bulkDeleteCandidates();
-                    }
-                  }}
-                >
-                  Delete Selected
-                </Button>
-              </div>
-            )}
-
             <CandidatesTable
               candidates={paginatedCandidates}
               isLoading={isLoading}
@@ -370,11 +241,9 @@ export default function CandidatesPage() {
               requestSort={requestSort}
               error={error}
               currentPage={currentPage}
-              totalPages={totalPages}
               rowsPerPage={rowsPerPage}
               onPageChange={handlePageChange}
               onRowsPerPageChange={handleRowsPerPageChange}
-              totalCandidates={filteredCandidates.length}
             />
           </CardContent>
         </Card>
@@ -387,19 +256,21 @@ export default function CandidatesPage() {
           setIsModalOpen(false);
           setSelectedCandidate(null);
         }}
-        onSave={handleSaveCandidate}
+        onSave={(formData) => {
+          if (selectedCandidate) {
+            updateCandidate({ id: selectedCandidate.id, ...formData });
+          } else {
+            createCandidate({ ...formData, electionId: "your-election-id" }); // Pass electionId here
+          }
+        }}
         candidate={selectedCandidate}
-        elections={elections} // Pass the elections data here
-        isSubmitting={formSubmitting}
+        electionId="your-election-id" // Pass electionId as props
       />
 
       {/* Delete Confirmation */}
       <DeleteConfirmation
         isOpen={isDeleteDialogOpen}
-        onClose={() => {
-          setIsDeleteDialogOpen(false);
-          setSelectedCandidate(null);
-        }}
+        onClose={() => setIsDeleteDialogOpen(false)}
         onConfirm={() =>
           selectedCandidate && deleteCandidate(selectedCandidate.id)
         }

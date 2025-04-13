@@ -389,7 +389,7 @@ export default function CandidatesPage() {
         }}
         onSave={handleSaveCandidate}
         candidate={selectedCandidate}
-        elections={elections} // Pass the elections data here
+        elections={elections}
         isSubmitting={formSubmitting}
       />
 
