@@ -97,8 +97,24 @@ export async function POST(req) {
     if (!kindeRes.ok) {
       const errorText = await kindeRes.text();
       console.error("[KINDE ERROR]:", errorText);
+      
+      // Try to parse the error as JSON to extract specific error codes
+      let kindeError = null;
+      try {
+        const errorJson = JSON.parse(errorText);
+        if (errorJson.errors && errorJson.errors.length > 0) {
+          kindeError = errorJson.errors[0].code;
+        }
+      } catch (e) {
+        // If parsing fails, just use the raw error text
+        kindeError = errorText;
+      }
+      
       return NextResponse.json(
-        { error: "Failed to create Kinde user" },
+        { 
+          error: "Failed to create Kinde user",
+          kindeError: kindeError
+        },
         { status: 500 }
       );
     }

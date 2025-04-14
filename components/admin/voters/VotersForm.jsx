@@ -23,6 +23,9 @@ import {
 } from "@/components/ui/dialog";
 import { voterSchema } from "@/validations/voterSchema";
 import { z } from "zod";
+import { LoadingModal } from "@/components/ui/loading-modal";
+import { User, Mail, Building2, GraduationCap, Calendar, Phone, CheckCircle2, XCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function VoterForm({ isOpen, onClose, onSave, voter }) {
   const [formData, setFormData] = useState({
@@ -43,13 +46,21 @@ export default function VoterForm({ isOpen, onClose, onSave, voter }) {
   // Ambil data fakultas dan jurusan saat form dibuka
   useEffect(() => {
     if (isOpen) {
+      console.log("Form opened, voter data:", voter);
       fetchFaculties();
       if (voter) {
+        // Extract faculty and major names from the voter object
+        const facultyName = voter.faculty?.name;
+        const majorName = voter.major?.name;
+        
+        console.log("Extracted facultyName:", facultyName);
+        console.log("Extracted majorName:", majorName);
+        
         setFormData({
           fullName: voter.name,
           email: voter.email,
-          facultyId: voter.facultyId,
-          majorId: voter.majorId,
+          facultyId: "", // Will be set when faculties are loaded
+          majorId: "", // Will be set when faculties are loaded
           year: voter.year,
           phone: voter.phone || "",
           status: voter.status || "active",
@@ -67,40 +78,219 @@ export default function VoterForm({ isOpen, onClose, onSave, voter }) {
       }
       setErrors({});
     }
-  }, [isOpen, voter, faculties]);
+  }, [isOpen, voter]);
 
   // Ambil data fakultas dari API
   const fetchFaculties = async () => {
     try {
+      console.log("Fetching faculties data...");
       const response = await fetch("/api/faculty/getAllFaculties");
       if (!response.ok) {
         throw new Error("Gagal mengambil data fakultas");
       }
       const data = await response.json();
+      console.log("Fetched faculties data:", data);
       setFaculties(data);
+      
+      // If we're editing a voter, find the faculty and major IDs by name
+      if (voter) {
+        const facultyName = voter.faculty?.name;
+        const majorName = voter.major?.name;
+        
+        console.log("Looking for faculty with name:", facultyName);
+        console.log("Looking for major with name:", majorName);
+        
+        if (facultyName) {
+          const selectedFaculty = data.find(
+            (faculty) => faculty.name === facultyName
+          );
+          console.log("Found faculty by name:", selectedFaculty);
+          
+          if (selectedFaculty) {
+            // Set the faculty ID in the form data
+            setFormData(prev => ({
+              ...prev,
+              facultyId: selectedFaculty.id
+            }));
+            
+            // Set the majors for the selected faculty
+            setMajors(selectedFaculty.majors || []);
+            
+            // If we also have the major name, find its ID
+            if (majorName && selectedFaculty.majors) {
+              const selectedMajor = selectedFaculty.majors.find(
+                (major) => major.name === majorName
+              );
+              console.log("Found major by name:", selectedMajor);
+              
+              if (selectedMajor) {
+                // Set the major ID in the form data
+                setFormData(prev => ({
+                  ...prev,
+                  majorId: selectedMajor.id
+                }));
+              }
+            }
+          }
+        }
+      }
     } catch (error) {
       console.error("Error mengambil data fakultas:", error);
       toast("Kesalahan", { description: "Gagal memuat data fakultas." });
     }
   };
 
-  // Tangani perubahan fakultas dan perbarui jurusan
-  const handleFacultyChange = (facultyId) => {
-    setFormData((prev) => ({ ...prev, facultyId, majorId: "" }));
-    const selectedFaculty = faculties.find(
-      (faculty) => faculty.id === facultyId
-    );
-    setMajors(selectedFaculty ? selectedFaculty.majors : []);
-  };
+  // Update form data when faculties and majors are loaded
+  useEffect(() => {
+    if (voter && faculties.length > 0) {
+      console.log("Faculties loaded, updating form data for voter:", voter);
+      
+      // Find faculty and major by name
+      const facultyName = voter.faculty?.name;
+      const majorName = voter.major?.name;
+      
+      console.log("Looking for faculty with name:", facultyName);
+      console.log("Looking for major with name:", majorName);
+      
+      if (facultyName) {
+        const selectedFaculty = faculties.find(
+          (faculty) => faculty.name === facultyName
+        );
+        console.log("Found faculty by name:", selectedFaculty);
+        
+        if (selectedFaculty) {
+          // Set the faculty ID in the form data
+          setFormData(prev => {
+            console.log("Previous form data:", prev);
+            const newData = {
+              ...prev,
+              facultyId: selectedFaculty.id
+            };
+            console.log("New form data with faculty ID:", newData);
+            return newData;
+          });
+          
+          // Set the majors for the selected faculty
+          setMajors(selectedFaculty.majors || []);
+          
+          // If we also have the major name, find its ID
+          if (majorName && selectedFaculty.majors) {
+            const selectedMajor = selectedFaculty.majors.find(
+              (major) => major.name === majorName
+            );
+            console.log("Found major by name:", selectedMajor);
+            
+            if (selectedMajor) {
+              // Set the major ID in the form data
+              setFormData(prev => {
+                console.log("Previous form data:", prev);
+                const newData = {
+                  ...prev,
+                  majorId: selectedMajor.id
+                };
+                console.log("New form data with major ID:", newData);
+                return newData;
+              });
+            }
+          }
+        }
+      }
+    }
+  }, [faculties, voter]);
 
   // Tangani perubahan input form
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    
+    // Validasi real-time
+    validateField(name, value);
+  };
+
+  // Fungsi untuk validasi field tertentu
+  const validateField = (name, value) => {
+    try {
+      // Buat objek dengan field yang sedang divalidasi
+      const fieldToValidate = { [name]: value };
+      
+      // Gunakan Zod untuk memvalidasi field tertentu
+      voterSchema.pick({ [name]: true }).parse(fieldToValidate);
+      
+      // Jika validasi berhasil, hapus error untuk field tersebut
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        // Ambil pesan error dari Zod
+        const errorMessage = error.errors[0]?.message || "Invalid input";
+        
+        // Set error untuk field tersebut
+        setErrors((prev) => ({
+          ...prev,
+          [name]: errorMessage,
+        }));
+      }
+    }
+  };
+
+  // Tangani perubahan fakultas
+  const handleFacultyChange = (facultyId) => {
+    console.log("Faculty changed to:", facultyId);
+    setFormData((prev) => ({ ...prev, facultyId, majorId: "" }));
+    const selectedFaculty = faculties.find(
+      (faculty) => faculty.id === facultyId
+    );
+    console.log("Selected faculty for majors:", selectedFaculty);
+    setMajors(selectedFaculty ? selectedFaculty.majors : []);
+    
+    // Validasi real-time
+    validateField("facultyId", facultyId);
+  };
+
+  // Tangani perubahan jurusan
+  const handleMajorChange = (majorId) => {
+    setFormData((prev) => ({ ...prev, majorId }));
+    
+    // Validasi real-time
+    validateField("majorId", majorId);
+  };
+
+  // Tangani perubahan status
+  const handleStatusChange = (status) => {
+    setFormData((prev) => ({ ...prev, status }));
+    
+    // Validasi real-time
+    validateField("status", status);
+  };
+
+  // Tangani perubahan tahun
+  const handleYearChange = (e) => {
+    const value = e.target.value;
+    setFormData((prev) => ({ ...prev, year: value }));
+    
+    // Validasi real-time
+    validateField("year", value);
+  };
+
+  // Tangani perubahan nomor telepon
+  const handlePhoneChange = (e) => {
+    let value = e.target.value;
+
+    if (value.startsWith("0")) {
+      value = "+62" + value.slice(1);
+    }
+
+    setFormData((prev) => ({ ...prev, phone: value }));
+    
+    // Validasi real-time
+    validateField("phone", value);
   };
 
   // Tangani pengiriman form
-    const handleSubmit = async () => {
+  const handleSubmit = async () => {
     try {
       console.log("Mengirim data form:", formData); // Log untuk debugging
   
@@ -142,19 +332,31 @@ export default function VoterForm({ isOpen, onClose, onSave, voter }) {
       if (!response.ok) {
         const errorData = await response.json();
         console.error("Kesalahan API:", errorData); // Log kesalahan API
+        
+        // Check for specific error types
+        if (errorData.error === "Failed to create Kinde user") {
+          // Check if the error is related to user already existing
+          if (errorData.kindeError && errorData.kindeError.includes("USER_ALREADY_EXISTS")) {
+            throw new Error("Email sudah terdaftar dalam sistem. Silakan gunakan email lain.");
+          }
+        }
+        
         throw new Error(errorData.error || "Gagal menyimpan data pemilih");
       }
   
+      const result = await response.json();
+      
+      // Reset form dan tutup modal
+      resetForm();
+      onSave(result || payload); // Kirim payload ke callback onSave
+      onClose();
+      
+      // Show success toast after operation completes
       toast.success("Berhasil", {
         description: voter
           ? "Pemilih berhasil diperbarui."
           : "Pemilih berhasil ditambahkan.",
       });
-  
-      // Reset form dan tutup modal
-      resetForm();
-      onSave(payload); // Kirim payload ke callback onSave
-      onClose();
     } catch (error) {
       if (error instanceof z.ZodError) {
         // Map error Zod ke field form
@@ -175,175 +377,299 @@ export default function VoterForm({ isOpen, onClose, onSave, voter }) {
     }
   };
 
+  // Fungsi untuk mereset form ke nilai awal
+  const resetForm = () => {
+    setFormData({
+      fullName: "",
+      email: "",
+      facultyId: "",
+      majorId: "",
+      year: "",
+      phone: "",
+      status: "active",
+    });
+    setErrors({});
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-screen-lg w-full p-0 overflow-hidden">
-        <AnimatePresence>
-          {isOpen && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8, y: 50 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.8, y: 50 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            >
-              <DialogHeader className="px-8 pt-8">
-                <DialogTitle className="text-2xl font-bold">
-                  {voter ? "Edit Pemilih" : "Tambah Pemilih Baru"}
-                </DialogTitle>
-                <DialogDescription className="text-gray-600">
-                  {voter
-                    ? "Perbarui informasi pemilih pada formulir di bawah ini."
-                    : "Isi detail untuk menambahkan pemilih baru ke sistem."}
-                </DialogDescription>
-              </DialogHeader>
-              <div className="px-8 py-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="grid gap-2">
-                  <Label htmlFor="fullName">Nama Lengkap *</Label>
-                  <Input
-                    id="fullName"
-                    name="fullName"
-                    value={formData.fullName}
-                    onChange={handleInputChange}
-                    placeholder="Masukkan nama lengkap"
-                  />
-                  {errors.fullName && (
-                    <p className="text-red-500 text-sm">{errors.fullName}</p>
-                  )}
+    <>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-[700px] p-0 overflow-hidden border-0 shadow-lg">
+          <AnimatePresence>
+            {isOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 20 }}
+                transition={{ duration: 0.3 }}
+                className="w-full"
+              >
+                <div className="bg-background px-6 py-5 border-b">
+                  <DialogHeader className="mb-0">
+                    <DialogTitle className="text-xl font-semibold">
+                      {voter ? "Edit Pemilih" : "Tambah Pemilih Baru"}
+                    </DialogTitle>
+                    <DialogDescription className="text-muted-foreground">
+                      {voter
+                        ? "Perbarui informasi pemilih di bawah ini."
+                        : "Isi informasi pemilih baru di bawah ini."}
+                    </DialogDescription>
+                  </DialogHeader>
                 </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="email">Email *</Label>
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    placeholder="Masukkan alamat email"
-                  />
-                  {errors.email && (
-                    <p className="text-red-500 text-sm">{errors.email}</p>
-                  )}
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="facultyId">Fakultas *</Label>
-                  <Select
-                    value={formData.facultyId}
-                    onValueChange={(value) => handleFacultyChange(value)}
-                  >
-                    <SelectTrigger id="facultyId">
-                      <SelectValue placeholder="Pilih fakultas" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {faculties.map((faculty) => (
-                        <SelectItem key={faculty.id} value={faculty.id}>
-                          {faculty.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {errors.facultyId && (
-                    <p className="text-red-500 text-sm">{errors.facultyId}</p>
-                  )}
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="majorId">Jurusan *</Label>
-                  <Select
-                    value={formData.majorId}
-                    onValueChange={(value) =>
-                      setFormData((prev) => ({ ...prev, majorId: value }))
-                    }
-                    disabled={!majors.length}
-                  >
-                    <SelectTrigger id="majorId">
-                      <SelectValue placeholder="Pilih jurusan" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {majors.map((major) => (
-                        <SelectItem key={major.id} value={major.id}>
-                          {major.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {errors.majorId && (
-                    <p className="text-red-500 text-sm">{errors.majorId}</p>
-                  )}
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="year">Angkatan *</Label>
-                  <Input
-                    id="year"
-                    name="year"
-                    value={formData.year}
-                    onChange={handleInputChange}
-                    placeholder="Masukkan tahun angkatan"
-                  />
-                  {errors.year && (
-                    <p className="text-red-500 text-sm">{errors.year}</p>
-                  )}
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="phone">No Telepon *</Label>
-                  <Input
-                    id="phone"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={(e) => {
-                      let value = e.target.value;
 
-                      if (value.startsWith("0")) {
-                        value = "+62" + value.slice(1);
-                      }
+                {/* Form content */}
+                <div className="p-6 max-h-[70vh] overflow-y-auto">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Nama Lengkap */}
+                    <div className="space-y-2">
+                      <Label htmlFor="fullName" className="flex items-center gap-1.5">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        Nama Lengkap <span className="text-destructive">*</span>
+                      </Label>
+                      <div className="relative">
+                        <Input
+                          id="fullName"
+                          name="fullName"
+                          value={formData.fullName}
+                          onChange={handleInputChange}
+                          placeholder="Masukkan nama lengkap"
+                          className={cn(
+                            "transition-colors",
+                            errors.fullName && "border-destructive focus-visible:ring-destructive"
+                          )}
+                        />
+                      </div>
+                      {errors.fullName && (
+                        <p className="text-destructive text-xs flex items-center gap-1">
+                          <XCircle className="h-3 w-3" />
+                          {errors.fullName}
+                        </p>
+                      )}
+                    </div>
 
-                      setFormData((prev) => ({ ...prev, phone: value }));
-                    }}
-                    placeholder="Contoh: 081234567890"
-                  />
-                  {errors.phone && (
-                    <p className="text-red-500 text-sm">{errors.phone}</p>
-                  )}
+                    {/* Email */}
+                    <div className="space-y-2">
+                      <Label htmlFor="email" className="flex items-center gap-1.5">
+                        <Mail className="h-4 w-4 text-muted-foreground" />
+                        Email <span className="text-destructive">*</span>
+                      </Label>
+                      <div className="relative">
+                        <Input
+                          id="email"
+                          name="email"
+                          type="email"
+                          value={formData.email}
+                          onChange={handleInputChange}
+                          placeholder="Masukkan alamat email"
+                          className={cn(
+                            "transition-colors",
+                            errors.email && "border-destructive focus-visible:ring-destructive"
+                          )}
+                        />
+                      </div>
+                      {errors.email && (
+                        <p className="text-destructive text-xs flex items-center gap-1">
+                          <XCircle className="h-3 w-3" />
+                          {errors.email}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Fakultas */}
+                    <div className="space-y-2">
+                      <Label htmlFor="facultyId" className="flex items-center gap-1.5">
+                        <Building2 className="h-4 w-4 text-muted-foreground" />
+                        Fakultas <span className="text-destructive">*</span>
+                      </Label>
+                      <div className="relative">
+                        <Select
+                          value={formData.facultyId}
+                          onValueChange={handleFacultyChange}
+                        >
+                          <SelectTrigger 
+                            id="facultyId"
+                            className={cn(
+                              "transition-colors",
+                              errors.facultyId && "border-destructive focus-visible:ring-destructive"
+                            )}
+                          >
+                            <SelectValue placeholder="Pilih fakultas" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {faculties.map((faculty) => (
+                              <SelectItem key={faculty.id} value={faculty.id}>
+                                {faculty.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {errors.facultyId && (
+                        <p className="text-destructive text-xs flex items-center gap-1">
+                          <XCircle className="h-3 w-3" />
+                          {errors.facultyId}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Jurusan */}
+                    <div className="space-y-2">
+                      <Label htmlFor="majorId" className="flex items-center gap-1.5">
+                        <GraduationCap className="h-4 w-4 text-muted-foreground" />
+                        Jurusan <span className="text-destructive">*</span>
+                      </Label>
+                      <div className="relative">
+                        <Select
+                          value={formData.majorId}
+                          onValueChange={handleMajorChange}
+                          disabled={!majors.length}
+                        >
+                          <SelectTrigger 
+                            id="majorId"
+                            className={cn(
+                              "transition-colors",
+                              errors.majorId && "border-destructive focus-visible:ring-destructive"
+                            )}
+                          >
+                            <SelectValue placeholder="Pilih jurusan" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {majors.map((major) => (
+                              <SelectItem key={major.id} value={major.id}>
+                                {major.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {errors.majorId && (
+                        <p className="text-destructive text-xs flex items-center gap-1">
+                          <XCircle className="h-3 w-3" />
+                          {errors.majorId}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Angkatan */}
+                    <div className="space-y-2">
+                      <Label htmlFor="year" className="flex items-center gap-1.5">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        Angkatan <span className="text-destructive">*</span>
+                      </Label>
+                      <div className="relative">
+                        <Input
+                          id="year"
+                          name="year"
+                          value={formData.year}
+                          onChange={handleYearChange}
+                          placeholder="Masukkan tahun angkatan"
+                          className={cn(
+                            "transition-colors",
+                            errors.year && "border-destructive focus-visible:ring-destructive"
+                          )}
+                        />
+                      </div>
+                      {errors.year && (
+                        <p className="text-destructive text-xs flex items-center gap-1">
+                          <XCircle className="h-3 w-3" />
+                          {errors.year}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* No Telepon */}
+                    <div className="space-y-2">
+                      <Label htmlFor="phone" className="flex items-center gap-1.5">
+                        <Phone className="h-4 w-4 text-muted-foreground" />
+                        No Telepon <span className="text-destructive">*</span>
+                      </Label>
+                      <div className="relative">
+                        <Input
+                          id="phone"
+                          name="phone"
+                          value={formData.phone}
+                          onChange={handlePhoneChange}
+                          placeholder="Contoh: 081234567890"
+                          className={cn(
+                            "transition-colors",
+                            errors.phone && "border-destructive focus-visible:ring-destructive"
+                          )}
+                        />
+                      </div>
+                      {errors.phone && (
+                        <p className="text-destructive text-xs flex items-center gap-1">
+                          <XCircle className="h-3 w-3" />
+                          {errors.phone}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Status */}
+                    <div className="space-y-2">
+                      <Label htmlFor="status" className="flex items-center gap-1.5">
+                        <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+                        Status <span className="text-destructive">*</span>
+                      </Label>
+                      <div className="relative">
+                        <Select
+                          value={formData.status}
+                          onValueChange={handleStatusChange}
+                        >
+                          <SelectTrigger 
+                            id="status"
+                            className={cn(
+                              "transition-colors",
+                              errors.status && "border-destructive focus-visible:ring-destructive"
+                            )}
+                          >
+                            <SelectValue placeholder="Pilih status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="active">Aktif</SelectItem>
+                            <SelectItem value="inactive">Tidak Aktif</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {errors.status && (
+                        <p className="text-destructive text-xs flex items-center gap-1">
+                          <XCircle className="h-3 w-3" />
+                          {errors.status}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="status">Status *</Label>
-                  <Select
-                    value={formData.status}
-                    onValueChange={(value) =>
-                      setFormData((prev) => ({ ...prev, status: value }))
-                    }
+
+                <DialogFooter className="px-6 py-4 bg-muted/50 border-t mx-6 flex flex-col sm:flex-row gap-2 md:gap-2 sm:gap-0 sm:justify-end">
+                  <Button 
+                    variant="outline" 
+                    onClick={onClose} 
+                    disabled={isSubmitting}
+                    className="w-full sm:w-auto cursor-pointer transition-all duration-200"
                   >
-                    <SelectTrigger id="status">
-                      <SelectValue placeholder="Pilih status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">Aktif</SelectItem>
-                      <SelectItem value="inactive">Tidak Aktif</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {errors.status && (
-                    <p className="text-red-500 text-sm">{errors.status}</p>
-                  )}
-                </div>
-              </div>
-              <DialogFooter className="px-8 pb-8 flex justify-end gap-4">
-                <Button
-                  variant="outline"
-                  onClick={onClose}
-                  disabled={isSubmitting}
-                >
-                  Batal
-                </Button>
-                <Button onClick={handleSubmit} disabled={isSubmitting}>
-                  {isSubmitting
-                    ? "Menyimpan..."
-                    : voter
-                    ? "Perbarui Pemilih"
-                    : "Tambah Pemilih"}
-                </Button>
-              </DialogFooter>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </DialogContent>
-    </Dialog>
+                    Batal
+                  </Button>
+                  <Button 
+                    onClick={handleSubmit} 
+                    disabled={isSubmitting}
+                    className="w-full sm:w-auto cursor-pointer transition-all duration-200"
+                  >
+                    {voter ? "Simpan" : "Tambah"}
+                  </Button>
+                </DialogFooter>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </DialogContent>
+      </Dialog>
+
+      {/* Loading Modal */}
+      <LoadingModal 
+        isOpen={isSubmitting} 
+        message={voter 
+          ? "Memperbarui data pemilih..." 
+          : "Menambahkan pemilih baru..."} 
+      />
+    </>
   );
 }
