@@ -63,6 +63,7 @@ export default function CandidatesPage() {
 
     fetchCandidates();
   }, [dataChanged]);
+  
 
   // Fetch all elections
   useEffect(() => {
@@ -148,38 +149,38 @@ export default function CandidatesPage() {
   };
 
   // Create
-  const createCandidate = async (formData) => {
-    setFormSubmitting(true);
-    try {
-      const payload = {
-        ...formData,
-        electionId: String(formData.electionId), // Convert to string
-      };
+ const createCandidate = async (formData) => {
+   setFormSubmitting(true);
+   try {
+     const payload = {
+       ...formData,
+       electionId: String(formData.electionId), // Convert to string
+     };
 
-      const res = await fetch("/api/candidate/createCandidate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+     const res = await fetch("/api/candidate/createCandidate", {
+       method: "POST",
+       headers: { "Content-Type": "application/json" },
+       body: JSON.stringify(payload),
+     });
 
-      const result = await res.json();
+     const result = await res.json();
 
-      if (!res.ok) {
-        throw new Error(result.error || "Failed to create candidate");
-      }
+     if (!res.ok) {
+       throw new Error(result.error || "Failed to create candidate");
+     }
 
-      toast.success(`Candidate "${formData.name}" added successfully.`);
-      setIsModalOpen(false);
-      setDataChanged((prev) => !prev);
-    } catch (err) {
-      console.error("Error creating candidate:", err);
-      toast.error(
-        err.message || "Failed to create candidate. Please try again."
-      );
-    } finally {
-      setFormSubmitting(false);
-    }
-  };
+     toast.success(`Candidate "${formData.name}" added successfully.`);
+     setIsModalOpen(false);
+     setDataChanged((prev) => !prev);
+   } catch (err) {
+     console.error("Error creating candidate:", err);
+     toast.error(
+       err.message || "Failed to create candidate. Please try again."
+     );
+   } finally {
+     setFormSubmitting(false);
+   }
+ };
 
   // Update
   const updateCandidate = async (formData) => {
@@ -302,9 +303,11 @@ export default function CandidatesPage() {
           <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <CardTitle className="text-2xl font-bold">
-                Manajemen Kandidat
+                Candidate Management
               </CardTitle>
-              <CardDescription>Kelola kandidat untuk pemilihan</CardDescription>
+              <CardDescription>
+                Manage candidates for the election
+              </CardDescription>
             </div>
             <div className="flex flex-col sm:flex-row gap-4 sm:items-center">
               <SearchAndFilter
@@ -314,7 +317,7 @@ export default function CandidatesPage() {
                 setStatusFilter={setStatusFilter}
               />
               <Button onClick={() => setIsModalOpen(true)} className="gap-1">
-                <Plus className="h-4 w-4" /> Tambah Kandidat
+                <Plus className="h-4 w-4" /> Add Candidate
               </Button>
             </div>
           </CardHeader>
@@ -322,7 +325,7 @@ export default function CandidatesPage() {
             {selectedCandidates.length > 0 && (
               <div className="mb-4 p-2 bg-red-50 rounded-md flex items-center justify-between">
                 <span className="text-sm text-red-600">
-                  {selectedCandidates.length} kandidat dipilih
+                  {selectedCandidates.length} candidate(s) selected
                 </span>
                 <Button
                   variant="destructive"
@@ -330,14 +333,14 @@ export default function CandidatesPage() {
                   onClick={() => {
                     if (
                       confirm(
-                        `Apakah Anda yakin ingin menghapus ${selectedCandidates.length} kandidat?`
+                        `Are you sure you want to delete ${selectedCandidates.length} candidates?`
                       )
                     ) {
                       bulkDeleteCandidates();
                     }
                   }}
                 >
-                  Hapus yang Dipilih
+                  Delete Selected
                 </Button>
               </div>
             )}
@@ -376,33 +379,33 @@ export default function CandidatesPage() {
             />
           </CardContent>
         </Card>
-
-        {/* Form Modal */}
-        <CandidatesForm
-          isOpen={isModalOpen}
-          onClose={() => {
-            setIsModalOpen(false);
-            setSelectedCandidate(null);
-          }}
-          onSave={handleSaveCandidate}
-          candidate={selectedCandidate}
-          elections={elections} // Pass the elections data here
-          isSubmitting={formSubmitting}
-        />
-
-        {/* Delete Confirmation */}
-        <DeleteConfirmation
-          isOpen={isDeleteDialogOpen}
-          onClose={() => {
-            setIsDeleteDialogOpen(false);
-            setSelectedCandidate(null);
-          }}
-          onConfirm={() =>
-            selectedCandidate && deleteCandidate(selectedCandidate.id)
-          }
-          candidateName={selectedCandidate?.name}
-        />
       </motion.div>
+
+      {/* Form Modal */}
+      <CandidatesForm
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedCandidate(null);
+        }}
+        onSave={handleSaveCandidate}
+        candidate={selectedCandidate}
+        elections={elections} // Pass the elections data here
+        isSubmitting={formSubmitting}
+      />
+
+      {/* Delete Confirmation */}
+      <DeleteConfirmation
+        isOpen={isDeleteDialogOpen}
+        onClose={() => {
+          setIsDeleteDialogOpen(false);
+          setSelectedCandidate(null);
+        }}
+        onConfirm={() =>
+          selectedCandidate && deleteCandidate(selectedCandidate.id)
+        }
+        candidateName={selectedCandidate?.name}
+      />
     </div>
   );
 }

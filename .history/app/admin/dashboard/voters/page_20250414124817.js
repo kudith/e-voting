@@ -315,8 +315,6 @@ export default function VotersPage() {
   count={selectedVoters.length}
   voterName={selectedVoter?.name}
 />
-  
-        </motion.div>
     </div>
   );
 }

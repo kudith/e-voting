@@ -30,29 +30,29 @@ export default function CandidatesForm({
     electionId: "",
   });
 
-  useEffect(() => {
-    if (isOpen) {
-      if (candidate) {
-        setFormData({
-          name: candidate.name || "",
-          photo: candidate.photo || "",
-          vision: candidate.vision || "",
-          mission: candidate.mission || "",
-          shortBio: candidate.shortBio || "",
-          electionId: candidate.election ? String(candidate.election.id) : "", // Safely access election.id
-        });
-      } else {
-        setFormData({
-          name: "",
-          photo: "",
-          vision: "",
-          mission: "",
-          shortBio: "",
-          electionId: "", // Set electionId to an empty string
-        });
-      }
-    }
-  }, [isOpen, candidate]);
+ useEffect(() => {
+   if (isOpen) {
+     if (candidate) {
+       setFormData({
+         name: candidate.name || "",
+         photo: candidate.photo || "",
+         vision: candidate.vision || "",
+         mission: candidate.mission || "",
+         shortBio: candidate.shortBio || "",
+         electionId: candidate.election ? String(candidate.election.id) : "", // Safely access election.id
+       });
+     } else {
+       setFormData({
+         name: "",
+         photo: "",
+         vision: "",
+         mission: "",
+         shortBio: "",
+         electionId: "", // Set electionId to an empty string
+       });
+     }
+   }
+ }, [isOpen, candidate]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -73,78 +73,78 @@ export default function CandidatesForm({
         >
           <DialogHeader className="px-6 pt-6">
             <DialogTitle>
-              {candidate ? "Edit Kandidat" : "Tambah Kandidat"}
+              {candidate ? "Edit Candidate" : "Add Candidate"}
             </DialogTitle>
             <DialogDescription>
               {candidate
-                ? "Perbarui informasi kandidat."
-                : "Isi formulir untuk menambahkan kandidat baru."}
+                ? "Update the candidate's information."
+                : "Fill out the form to add a new candidate."}
             </DialogDescription>
           </DialogHeader>
           <div className="px-6 py-4 grid gap-4">
             {/* Name Field */}
             <div className="grid gap-2">
-              <Label htmlFor="name">Nama *</Label>
+              <Label htmlFor="name">Name *</Label>
               <Input
                 id="name"
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
-                placeholder="Masukkan nama kandidat"
+                placeholder="Enter candidate's name"
               />
             </div>
 
             {/* Photo Field */}
             <div className="grid gap-2">
-              <Label htmlFor="photo">URL Foto *</Label>
+              <Label htmlFor="photo">Photo URL *</Label>
               <Input
                 id="photo"
                 name="photo"
                 value={formData.photo}
                 onChange={handleInputChange}
-                placeholder="Masukkan URL foto kandidat"
+                placeholder="Enter photo URL"
               />
             </div>
 
             {/* Vision Field */}
             <div className="grid gap-2">
-              <Label htmlFor="vision">Visi *</Label>
+              <Label htmlFor="vision">Vision *</Label>
               <Input
                 id="vision"
                 name="vision"
                 value={formData.vision}
                 onChange={handleInputChange}
-                placeholder="Masukkan visi kandidat"
+                placeholder="Enter candidate's vision"
               />
             </div>
 
             {/* Mission Field */}
             <div className="grid gap-2">
-              <Label htmlFor="mission">Misi *</Label>
+              <Label htmlFor="mission">Mission *</Label>
               <Input
                 id="mission"
                 name="mission"
                 value={formData.mission}
                 onChange={handleInputChange}
-                placeholder="Masukkan misi kandidat"
+                placeholder="Enter candidate's mission"
               />
             </div>
 
             {/* Short Bio Field */}
             <div className="grid gap-2">
-              <Label htmlFor="shortBio">Bio Singkat *</Label>
+              <Label htmlFor="shortBio">Short Bio *</Label>
               <Input
                 id="shortBio"
                 name="shortBio"
                 value={formData.shortBio}
                 onChange={handleInputChange}
-                placeholder="Masukkan bio singkat kandidat"
+                placeholder="Enter candidate's short bio"
               />
             </div>
 
             {/* Election ID Field */}
             <div className="grid gap-2">
-              <Label htmlFor="electionId">Pemilihan *</Label>
+              <Label htmlFor="electionId">Election *</Label>
               <select
                 id="electionId"
                 name="electionId"
@@ -152,7 +152,7 @@ export default function CandidatesForm({
                 onChange={handleInputChange}
                 className="border rounded-md p-2"
               >
-                <option value="">Pilih pemilihan</option>
+                <option value="">Select an election</option>
                 {elections && elections.length > 0 ? (
                   elections.map((election) => (
                     <option key={election.id} value={election.id}>
@@ -160,17 +160,17 @@ export default function CandidatesForm({
                     </option>
                   ))
                 ) : (
-                  <option disabled>Tidak ada pemilihan tersedia</option>
+                  <option disabled>No elections available</option>
                 )}
               </select>
             </div>
           </div>
           <DialogFooter className="px-6 pb-6">
             <Button variant="outline" onClick={onClose}>
-              Batal
+              Cancel
             </Button>
             <Button onClick={() => onSave(formData)}>
-              {candidate ? "Perbarui Kandidat" : "Buat Kandidat"}
+              {candidate ? "Update Candidate" : "Create Candidate"}
             </Button>
           </DialogFooter>
         </motion.div>

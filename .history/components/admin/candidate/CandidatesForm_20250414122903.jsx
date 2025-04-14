@@ -73,12 +73,12 @@ export default function CandidatesForm({
         >
           <DialogHeader className="px-6 pt-6">
             <DialogTitle>
-              {candidate ? "Edit Kandidat" : "Tambah Kandidat"}
+              {candidate ? "Edit Candidate" : "Add Candidate"}
             </DialogTitle>
             <DialogDescription>
               {candidate
-                ? "Perbarui informasi kandidat."
-                : "Isi formulir untuk menambahkan kandidat baru."}
+                ? "Update the candidate's information."
+                : "Fill out the form to add a new candidate."}
             </DialogDescription>
           </DialogHeader>
           <div className="px-6 py-4 grid gap-4">
@@ -90,7 +90,7 @@ export default function CandidatesForm({
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
-                placeholder="Masukkan nama kandidat"
+                placeholder="Enter candidate's name"
               />
             </div>
 
@@ -102,7 +102,7 @@ export default function CandidatesForm({
                 name="photo"
                 value={formData.photo}
                 onChange={handleInputChange}
-                placeholder="Masukkan URL foto kandidat"
+                placeholder="Enter photo URL"
               />
             </div>
 
@@ -114,7 +114,7 @@ export default function CandidatesForm({
                 name="vision"
                 value={formData.vision}
                 onChange={handleInputChange}
-                placeholder="Masukkan visi kandidat"
+                placeholder="Enter candidate's vision"
               />
             </div>
 
@@ -126,7 +126,7 @@ export default function CandidatesForm({
                 name="mission"
                 value={formData.mission}
                 onChange={handleInputChange}
-                placeholder="Masukkan misi kandidat"
+                placeholder="Enter candidate's mission"
               />
             </div>
 
@@ -138,7 +138,7 @@ export default function CandidatesForm({
                 name="shortBio"
                 value={formData.shortBio}
                 onChange={handleInputChange}
-                placeholder="Masukkan bio singkat kandidat"
+                placeholder="Enter candidate's short bio"
               />
             </div>
 
@@ -152,7 +152,7 @@ export default function CandidatesForm({
                 onChange={handleInputChange}
                 className="border rounded-md p-2"
               >
-                <option value="">Pilih pemilihan</option>
+                <option value="">Select an election</option>
                 {elections && elections.length > 0 ? (
                   elections.map((election) => (
                     <option key={election.id} value={election.id}>
@@ -160,17 +160,17 @@ export default function CandidatesForm({
                     </option>
                   ))
                 ) : (
-                  <option disabled>Tidak ada pemilihan tersedia</option>
+                  <option disabled>No elections available</option>
                 )}
               </select>
             </div>
           </div>
           <DialogFooter className="px-6 pb-6">
             <Button variant="outline" onClick={onClose}>
-              Batal
+              Cancel
             </Button>
             <Button onClick={() => onSave(formData)}>
-              {candidate ? "Perbarui Kandidat" : "Buat Kandidat"}
+              {candidate ? "Update Candidate" : "Create Candidate"}
             </Button>
           </DialogFooter>
         </motion.div>

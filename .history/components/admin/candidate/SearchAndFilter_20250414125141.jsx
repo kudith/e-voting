@@ -21,7 +21,7 @@ export default function SearchAndFilter({
       <div className="relative">
         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Cari Kandidat..."
+          placeholder="Search candidates..."
           className="pl-8 w-full sm:w-[250px]"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
@@ -34,7 +34,7 @@ export default function SearchAndFilter({
         <SelectContent>
           <SelectItem value="all">Semua</SelectItem>
           <SelectItem value="Active">Aktif</SelectItem>
-          <SelectItem value="Inactive">Nonaktif</SelectItem>
+          <SelectItem value="Inactive"></SelectItem>
         </SelectContent>
       </Select>
     </div>

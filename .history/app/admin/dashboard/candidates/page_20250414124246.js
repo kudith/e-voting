@@ -64,6 +64,7 @@ export default function CandidatesPage() {
     fetchCandidates();
   }, [dataChanged]);
 
+
   // Fetch all elections
   useEffect(() => {
     const fetchElections = async () => {
@@ -148,38 +149,38 @@ export default function CandidatesPage() {
   };
 
   // Create
-  const createCandidate = async (formData) => {
-    setFormSubmitting(true);
-    try {
-      const payload = {
-        ...formData,
-        electionId: String(formData.electionId), // Convert to string
-      };
+ const createCandidate = async (formData) => {
+   setFormSubmitting(true);
+   try {
+     const payload = {
+       ...formData,
+       electionId: String(formData.electionId), // Convert to string
+     };
 
-      const res = await fetch("/api/candidate/createCandidate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+     const res = await fetch("/api/candidate/createCandidate", {
+       method: "POST",
+       headers: { "Content-Type": "application/json" },
+       body: JSON.stringify(payload),
+     });
 
-      const result = await res.json();
+     const result = await res.json();
 
-      if (!res.ok) {
-        throw new Error(result.error || "Failed to create candidate");
-      }
+     if (!res.ok) {
+       throw new Error(result.error || "Failed to create candidate");
+     }
 
-      toast.success(`Candidate "${formData.name}" added successfully.`);
-      setIsModalOpen(false);
-      setDataChanged((prev) => !prev);
-    } catch (err) {
-      console.error("Error creating candidate:", err);
-      toast.error(
-        err.message || "Failed to create candidate. Please try again."
-      );
-    } finally {
-      setFormSubmitting(false);
-    }
-  };
+     toast.success(`Candidate "${formData.name}" added successfully.`);
+     setIsModalOpen(false);
+     setDataChanged((prev) => !prev);
+   } catch (err) {
+     console.error("Error creating candidate:", err);
+     toast.error(
+       err.message || "Failed to create candidate. Please try again."
+     );
+   } finally {
+     setFormSubmitting(false);
+   }
+ };
 
   // Update
   const updateCandidate = async (formData) => {
@@ -298,49 +299,112 @@ export default function CandidatesPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <Card>
-          <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <CardTitle className="text-2xl font-bold">
-                Manajemen Kandidat
-              </CardTitle>
-              <CardDescription>Kelola kandidat untuk pemilihan</CardDescription>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-4 sm:items-center">
-              <SearchAndFilter
-                searchQuery={searchQuery}
-                setSearchQuery={setSearchQuery}
-                statusFilter={statusFilter}
-                setStatusFilter={setStatusFilter}
-              />
-              <Button onClick={() => setIsModalOpen(true)} className="gap-1">
-                <Plus className="h-4 w-4" /> Tambah Kandidat
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {selectedCandidates.length > 0 && (
-              <div className="mb-4 p-2 bg-red-50 rounded-md flex items-center justify-between">
-                <span className="text-sm text-red-600">
-                  {selectedCandidates.length} kandidat dipilih
-                </span>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => {
-                    if (
-                      confirm(
-                        `Apakah Anda yakin ingin menghapus ${selectedCandidates.length} kandidat?`
-                      )
-                    ) {
-                      bulkDeleteCandidates();
-                    }
-                  }}
-                >
-                  Hapus yang Dipilih
-                </Button>
-              </div>
-            )}
+       <Card>
+  <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <CardTitle className="text-2xl font-bold">
+        Manajemen Kandidat
+      </CardTitle>
+      <CardDescription>
+        Kelola kandidat untuk pemilihan
+      </CardDescription>
+    </div>
+    <div className="flex flex-col sm:flex-row gap-4 sm:items-center">
+      <SearchAndFilter
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        statusFilter={statusFilter}
+        setStatusFilter={setStatusFilter}
+      />
+      <Button onClick={() => setIsModalOpen(true)} className="gap-1">
+        <Plus className="h-4 w-4" /> Tambah Kandidat
+      </Button>
+    </div>
+  </CardHeader>
+  <CardContent>
+    {selectedCandidates.length > 0 && (
+      <div className="mb-4 p-2 bg-red-50 rounded-md flex items-center justify-between">
+        <span className="text-sm text-red-600">
+          {selectedCandidates.length} kandidat dipilih
+        </span>
+        <Button
+          variant="destructive"
+          size="sm"
+          onClick={() => {
+            if (
+              confirm(
+                `Apakah Anda yakin ingin menghapus ${selectedCandidates.length} kandidat?`
+              )
+            ) {
+              bulkDeleteCandidates();
+            }
+          }}
+        >
+          Hapus yang Dipilih
+        </Button>
+      </div>
+    )}
+
+    <CandidatesTable
+      candidates={paginatedCandidates}
+      isLoading={isLoading}
+      selectedCandidates={selectedCandidates}
+      onSelectCandidate={(id, checked) =>
+        setSelectedCandidates((prev) =>
+          checked ? [...prev, id] : prev.filter((c) => c !== id)
+        )
+      }
+      onSelectAll={(checked) =>
+        setSelectedCandidates(
+          checked ? paginatedCandidates.map((c) => c.id) : []
+        )
+      }
+      onEdit={(candidate) => {
+        setSelectedCandidate(candidate);
+        setIsModalOpen(true);
+      }}
+      onDelete={(candidate) => {
+        setSelectedCandidate(candidate);
+        setIsDeleteDialogOpen(true);
+      }}
+      sortConfig={sortConfig}
+      requestSort={requestSort}
+      error={error}
+      currentPage={currentPage}
+      totalPages={totalPages}
+      rowsPerPage={rowsPerPage}
+      onPageChange={handlePageChange}
+      onRowsPerPageChange={handleRowsPerPageChange}
+      totalCandidates={filteredCandidates.length}
+    />
+  </CardContent>
+</Card>
+
+{/* Form Modal */}
+<CandidatesForm
+  isOpen={isModalOpen}
+  onClose={() => {
+    setIsModalOpen(false);
+    setSelectedCandidate(null);
+  }}
+  onSave={handleSaveCandidate}
+  candidate={selectedCandidate}
+  elections={elections} // Pass the elections data here
+  isSubmitting={formSubmitting}
+/>
+
+{/* Delete Confirmation */}
+<DeleteConfirmation
+  isOpen={isDeleteDialogOpen}
+  onClose={() => {
+    setIsDeleteDialogOpen(false);
+    setSelectedCandidate(null);
+  }}
+  onConfirm={() =>
+    selectedCandidate && deleteCandidate(selectedCandidate.id)
+  }
+  candidateName={selectedCandidate?.name}
+/>
 
             <CandidatesTable
               candidates={paginatedCandidates}
@@ -376,33 +440,33 @@ export default function CandidatesPage() {
             />
           </CardContent>
         </Card>
-
-        {/* Form Modal */}
-        <CandidatesForm
-          isOpen={isModalOpen}
-          onClose={() => {
-            setIsModalOpen(false);
-            setSelectedCandidate(null);
-          }}
-          onSave={handleSaveCandidate}
-          candidate={selectedCandidate}
-          elections={elections} // Pass the elections data here
-          isSubmitting={formSubmitting}
-        />
-
-        {/* Delete Confirmation */}
-        <DeleteConfirmation
-          isOpen={isDeleteDialogOpen}
-          onClose={() => {
-            setIsDeleteDialogOpen(false);
-            setSelectedCandidate(null);
-          }}
-          onConfirm={() =>
-            selectedCandidate && deleteCandidate(selectedCandidate.id)
-          }
-          candidateName={selectedCandidate?.name}
-        />
       </motion.div>
+
+      {/* Form Modal */}
+      <CandidatesForm
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedCandidate(null);
+        }}
+        onSave={handleSaveCandidate}
+        candidate={selectedCandidate}
+        elections={elections} // Pass the elections data here
+        isSubmitting={formSubmitting}
+      />
+
+      {/* Delete Confirmation */}
+      <DeleteConfirmation
+        isOpen={isDeleteDialogOpen}
+        onClose={() => {
+          setIsDeleteDialogOpen(false);
+          setSelectedCandidate(null);
+        }}
+        onConfirm={() =>
+          selectedCandidate && deleteCandidate(selectedCandidate.id)
+        }
+        candidateName={selectedCandidate?.name}
+      />
     </div>
   );
 }
