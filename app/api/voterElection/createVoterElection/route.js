@@ -8,7 +8,8 @@ const prisma = new PrismaClient();
 const voterElectionSchema = z.object({
   voterId: z.string().min(1, "Voter ID cannot be empty"),
   electionId: z.string().min(1, "Election ID cannot be empty"),
-  eligible: z.boolean().optional(), // Default to true if not provided
+  isEligible: z.boolean().optional(), // Default to true if not provided
+  hasVoted: z.boolean().optional(), // Default to false if not provided
 });
 
 export async function POST(req) {
@@ -59,18 +60,37 @@ export async function POST(req) {
       );
     }
 
+    // Validate election status
+    const currentDate = new Date();
+    if (new Date(election.startDate) > currentDate) {
+      return NextResponse.json(
+        { error: "Election has not started yet" },
+        { status: 400 }
+      );
+    }
+
+    if (new Date(election.endDate) < currentDate) {
+      return NextResponse.json(
+        { error: "Election has already ended" },
+        { status: 400 }
+      );
+    }
+
     // Create VoterElection
-    const newVoterElection = await prisma.voterElection.create({
+    await prisma.voterElection.create({
       data: {
         voterId: validatedData.voterId,
         electionId: validatedData.electionId,
-        eligible: validatedData.eligible ?? true, // Default to true if not provided
+        isEligible: validatedData.isEligible ?? true, // Default to true if not provided
+        hasVoted: validatedData.hasVoted ?? false, // Default to false if not provided
       },
     });
 
-    console.log("VoterElection successfully created:", newVoterElection);
+    console.log("VoterElection successfully created");
+
+    // Professional response
     return NextResponse.json(
-      { message: "VoterElection successfully created", voterElection: newVoterElection },
+      { message: "VoterElection successfully created" },
       { status: 201 }
     );
   } catch (error) {

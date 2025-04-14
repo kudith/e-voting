@@ -1,128 +1,154 @@
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client-js" // Prisma Client untuk mengakses database
 }
 
 datasource db {
-  provider = "mongodb"
-  url      = env("DATABASE_URL")
+  provider = "mongodb" // Menggunakan MongoDB sebagai database
+  url      = env("DATABASE_URL") // URL database diambil dari environment variable
 }
 
 enum VoterStatus {
-  active
-  inactive
+  active   // Pemilih aktif
+  inactive // Pemilih tidak aktif
 }
 
+// Fakultas yang dimiliki oleh pemilih
 model Faculty {
-  id     String  @id @default(auto()) @map("_id") @db.ObjectId
-  name   String  @unique
-  majors Major[]
-  voters Voter[] @relation("FacultyToVoter")
+  id       String  @id @default(auto()) @map("_id") @db.ObjectId // ID unik fakultas
+  name     String  @unique // Nama fakultas
+  majors   Major[] // Relasi ke jurusan
+  voters   Voter[] @relation("FacultyToVoter") // Relasi ke pemilih
 }
 
+// Jurusan yang dimiliki oleh fakultas
 model Major {
-  id        String  @id @default(auto()) @map("_id") @db.ObjectId
-  name      String
-  facultyId String  @db.ObjectId
-  faculty   Faculty @relation(fields: [facultyId], references: [id])
-  voters    Voter[] @relation("MajorToVoter")
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId // ID unik jurusan
+  name      String // Nama jurusan
+  facultyId String  @db.ObjectId // ID fakultas
+  faculty   Faculty @relation(fields: [facultyId], references: [id]) // Relasi ke fakultas
+  voters    Voter[] @relation("MajorToVoter") // Relasi ke pemilih
 }
 
+// Admin yang mengelola sistem
 model Admin {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  kindeId   String   @unique
-  username  String   @unique
-  email     String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId // ID unik admin
+  kindeId   String   @unique // ID unik internal
+  username  String   @unique // Username admin
+  email     String   @unique // Email admin
+  createdAt DateTime @default(now()) // Waktu pembuatan
+  updatedAt DateTime @updatedAt // Waktu terakhir diperbarui
 }
 
+// Pemilih yang terdaftar dalam sistem
 model Voter {
-  id        String      @id @default(auto()) @map("_id") @db.ObjectId
-  kindeId   String      @unique
-  voterCode String      @unique
-  name      String
-  email     String      @unique
-  phone     String
-  facultyId String      @db.ObjectId
-  faculty   Faculty     @relation("FacultyToVoter", fields: [facultyId], references: [id])
-  majorId   String      @db.ObjectId
-  major     Major       @relation("MajorToVoter", fields: [majorId], references: [id])
-  year      String
-  status    VoterStatus @default(active)
-  voted     Boolean     @default(false)
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+  id           String      @id @default(auto()) @map("_id") @db.ObjectId // ID unik pemilih
+  kindeId      String      @unique // ID unik internal
+  voterCode    String      @unique // Kode unik pemilih
+  name         String // Nama pemilih
+  email        String      @unique // Email pemilih
+  phone        String // Nomor telepon pemilih
+  facultyId    String      @db.ObjectId // ID fakultas
+  faculty      Faculty     @relation("FacultyToVoter", fields: [facultyId], references: [id]) // Relasi ke fakultas
+  majorId      String      @db.ObjectId // ID jurusan
+  major        Major       @relation("MajorToVoter", fields: [majorId], references: [id]) // Relasi ke jurusan
+  year         String // Tahun angkatan pemilih
+  status       VoterStatus @default(active) // Status pemilih (aktif/tidak aktif)
+  createdAt    DateTime    @default(now()) // Waktu pembuatan
+  updatedAt    DateTime    @updatedAt // Waktu terakhir diperbarui
 
-  vote            Vote?
-  voterElections  VoterElection[] // <- Tambahan relasi
+  votes        Vote? // Relasi ke suara yang diberikan
+  voterElections VoterElection[] // Relasi ke pemilu yang diikuti
 }
 
+// Kandidat yang mengikuti pemilu
 model Candidate {
-  id          String    @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
-  photo       String
-  vision      String
-  mission     String
-  shortBio    String
-  voteCount   Int       @default(0)
-  electionId  String    @db.ObjectId
-  election    Election  @relation(fields: [electionId], references: [id])
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId // ID unik kandidat
+  name        String // Nama kandidat
+  photo       String // URL foto kandidat
+  vision      String // Visi kandidat
+  mission     String // Misi kandidat
+  shortBio    String // Biografi singkat kandidat
+  voteCount   Int       @default(0) // Jumlah suara yang diterima kandidat
+  electionId  String    @db.ObjectId // ID pemilu
+  election    Election  @relation(fields: [electionId], references: [id]) // Relasi ke pemilu
+  createdAt   DateTime  @default(now()) // Waktu pembuatan
+  updatedAt   DateTime  @updatedAt // Waktu terakhir diperbarui
 
-  votes       Vote[]
+  votes       Vote[] // Relasi ke suara yang diterima
 }
 
+// Suara yang diberikan oleh pemilih
 model Vote {
-  id            String     @id @default(auto()) @map("_id") @db.ObjectId
-  voterId       String     @unique @db.ObjectId
-  candidateId   String     @db.ObjectId
-  electionId    String     @db.ObjectId
-  hashVote      String
-  zkProof       String?
-  nullifierHash String?
-  timestamp     DateTime   @default(now())
+  id            String     @id @default(auto()) @map("_id") @db.ObjectId // ID unik suara
+  voterId       String     @unique @db.ObjectId // ID pemilih
+  candidateId   String     @db.ObjectId // ID kandidat
+  electionId    String     @db.ObjectId // ID pemilu
+  voteHash      String // Hash suara untuk integritas
+  zkProof       String? // Zero-knowledge proof (opsional)
+  nullifierHash String? // Nullifier hash untuk privasi (opsional)
+  createdAt     DateTime   @default(now()) // Waktu pembuatan suara
 
-  voter     Voter?     @relation(fields: [voterId], references: [id])
-  candidate Candidate? @relation(fields: [candidateId], references: [id])
-  election  Election?  @relation(fields: [electionId], references: [id])
+  voter         Voter?     @relation(fields: [voterId], references: [id]) // Relasi ke pemilih
+  candidate     Candidate? @relation(fields: [candidateId], references: [id]) // Relasi ke kandidat
+  election      Election?  @relation(fields: [electionId], references: [id]) // Relasi ke pemilu
 }
 
+// Pemilu yang diadakan
 model Election {
-  id          String          @id @default(auto()) @map("_id") @db.ObjectId
-  title       String
-  description String
-  startDate   DateTime
-  endDate     DateTime
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  id                  String                 @id @default(auto()) @map("_id") @db.ObjectId // ID unik pemilu
+  title               String // Judul pemilu
+  description         String // Deskripsi pemilu
+  startDate           DateTime // Tanggal mulai pemilu
+  endDate             DateTime // Tanggal berakhir pemilu
+  status              String                 @default("ongoing") // Status pemilu (ongoing, completed, upcoming)
+  totalVotes          Int                    @default(0) // Total suara yang diberikan
+  createdAt           DateTime               @default(now()) // Waktu pembuatan
+  updatedAt           DateTime               @updatedAt // Waktu terakhir diperbarui
 
-  candidates      Candidate[]
-  votes           Vote[]
-  voterElections  VoterElection[] 
+  candidates          Candidate[] // Relasi ke kandidat
+  votes               Vote[] // Relasi ke suara
+  voterElections      VoterElection[] // Relasi ke pemilih yang mengikuti pemilu
+  statistics          ElectionStatistics?    @relation("ElectionToStatistics") // Relasi ke statistik pemilu
 }
 
+// Statistik pemilu
+model ElectionStatistics {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId // ID unik statistik
+  electionId        String   @unique @db.ObjectId // ID pemilu
+  totalVoters       Int      // Jumlah total pemilih
+  eligibleVoters    Int      // Jumlah pemilih yang memenuhi syarat
+  votersWhoVoted    Int      // Jumlah pemilih yang sudah memberikan suara
+  participationRate Float    // Persentase partisipasi pemilih
+  createdAt         DateTime @default(now()) // Waktu pembuatan statistik
+  updatedAt         DateTime @updatedAt // Waktu terakhir diperbarui
+
+  election          Election @relation("ElectionToStatistics", fields: [electionId], references: [id]) // Relasi ke pemilu
+}
+
+// Relasi antara pemilih dan pemilu
 model VoterElection {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  voterId    String   @db.ObjectId
-  electionId String   @db.ObjectId
-  eligible   Boolean  @default(true)
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId // ID unik relasi
+  voterId    String   @db.ObjectId // ID pemilih
+  electionId String   @db.ObjectId // ID pemilu
+  isEligible Boolean  @default(true) // Apakah pemilih memenuhi syarat
+  hasVoted   Boolean  @default(false) // Apakah pemilih sudah memberikan suara
 
-  voter      Voter    @relation(fields: [voterId], references: [id])
-  election   Election @relation(fields: [electionId], references: [id])
+  voter      Voter    @relation(fields: [voterId], references: [id]) // Relasi ke pemilih
+  election   Election @relation(fields: [electionId], references: [id]) // Relasi ke pemilu
 
-  @@unique([voterId, electionId]) // Supaya gak ganda
+  @@unique([voterId, electionId]) // Kombinasi unik pemilih dan pemilu
 }
 
+// Struktur Merkle Tree untuk integritas suara
 model MerkleTree {
-  id         String  @id @default(auto()) @map("_id") @db.ObjectId
-  voteHash   String  @unique
-  level      Int
-  position   Int
-  parentId   String? @db.ObjectId
-  parentHash String?
-  root       Boolean @default(false)
+  id         String  @id @default(auto()) @map("_id") @db.ObjectId // ID unik node
+  voteHash   String  @unique // Hash suara
+  level      Int // Level node dalam pohon
+  position   Int // Posisi node dalam level
+  parentId   String? @db.ObjectId // ID parent node
+  parentHash String? // Hash parent node
+  isRoot     Boolean @default(false) // Apakah node ini adalah root
 
-  parent   MerkleTree?  @relation("ParentChild", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  children MerkleTree[] @relation("ParentChild")
+  parent     MerkleTree?  @relation("ParentChild", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction) // Relasi ke parent node
+  children   MerkleTree[] @relation("ParentChild") // Relasi ke child node
 }

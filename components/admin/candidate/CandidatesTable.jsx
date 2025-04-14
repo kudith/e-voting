@@ -177,7 +177,7 @@ export default function CandidatesTable({
                   </TableCell>
                   <TableCell>{candidate.voteCount}</TableCell>
                   <TableCell className="whitespace-normal break-words max-w-[200px]">
-                    {candidate.election ? String(candidate.election.id) : "N/A"}{" "}
+                    {candidate.election ? String(candidate.election.title) : "N/A"}{" "}
                     {/* Safely access election.id */}
                   </TableCell>
                   <TableCell className="text-right">

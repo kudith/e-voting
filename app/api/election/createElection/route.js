@@ -31,30 +31,50 @@ export async function POST(req) {
       );
     }
 
+    // Tentukan status pemilu berdasarkan tanggal
+    const currentDate = new Date();
+    let status = "upcoming";
+    if (currentDate >= startDate && currentDate <= endDate) {
+      status = "ongoing";
+    } else if (currentDate > endDate) {
+      status = "completed";
+    }
+
     console.log("Creating a new election with data:", data);
 
     // Buat pemilu baru
-    const newElection = await prisma.election.create({
+    await prisma.election.create({
       data: {
         title: data.title,
         description: data.description,
         startDate,
         endDate,
+        status, // Status pemilu (upcoming, ongoing, completed)
+        totalVotes: 0, // Default total suara adalah 0
       },
     });
 
-    console.log("Election created successfully:", newElection);
+    console.log("Election created successfully");
 
+    // Respons sukses yang profesional
     return NextResponse.json(
-      { message: "Election created successfully", election: newElection },
+      { message: "Election created successfully" },
       { status: 201 }
     );
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return NextResponse.json({ errors: err.errors }, { status: 400 });
+      // Tangani error validasi Zod
+      console.error("Validation Error:", err.errors);
+      return NextResponse.json(
+        { errors: err.errors.map((e) => e.message) },
+        { status: 400 }
+      );
     }
 
     console.error("[ERROR CREATING ELECTION]", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }

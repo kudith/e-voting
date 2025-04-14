@@ -8,10 +8,11 @@ const prisma = new PrismaClient();
 const updateVoterElectionSchema = z.object({
   voterId: z.string().min(1, "Voter ID cannot be empty").optional(),
   electionId: z.string().min(1, "Election ID cannot be empty").optional(),
-  eligible: z.boolean().optional(),
+  isEligible: z.boolean().optional(),
+  hasVoted: z.boolean().optional(),
 });
 
-export async function PUT(req) {
+export async function PATCH(req) {
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
@@ -40,15 +41,48 @@ export async function PUT(req) {
       );
     }
 
+    // Validate new electionId if provided
+    if (validatedData.electionId) {
+      const newElection = await prisma.election.findUnique({
+        where: { id: validatedData.electionId },
+      });
+
+      if (!newElection) {
+        return NextResponse.json(
+          { error: "New electionId is invalid or does not exist" },
+          { status: 404 }
+        );
+      }
+
+      // Check if the voterElection already exists for the new election
+      const duplicateVoterElection = await prisma.voterElection.findUnique({
+        where: {
+          voterId_electionId: {
+            voterId: existingVoterElection.voterId,
+            electionId: validatedData.electionId,
+          },
+        },
+      });
+
+      if (duplicateVoterElection) {
+        return NextResponse.json(
+          { error: "VoterElection already exists for the new electionId" },
+          { status: 400 }
+        );
+      }
+    }
+
     // Update VoterElection
-    const updatedVoterElection = await prisma.voterElection.update({
+    await prisma.voterElection.update({
       where: { id },
       data: validatedData,
     });
 
-    console.log("VoterElection successfully updated:", updatedVoterElection);
+    console.log("VoterElection successfully updated");
+
+    // Professional response
     return NextResponse.json(
-      { message: "VoterElection successfully updated", voterElection: updatedVoterElection },
+      { message: "VoterElection successfully updated" },
       { status: 200 }
     );
   } catch (error) {
