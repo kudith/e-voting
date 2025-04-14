@@ -144,7 +144,7 @@ export default function VotersPage() {
   };
 
   return (
-    <div className="container mx-auto py-8 px-4">
+    <div className="container mx-auto py-8 px-4 max-w-7xl">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -278,35 +278,29 @@ export default function VotersPage() {
       {/* Voter Form Modal */}
       <VoterForm
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedVoter(null); // Reset selected voter saat modal ditutup
+        }}
         onSave={(formData) => {
+          setIsModalOpen(false);
+          setDataChanged((prev) => !prev); // Trigger re-fetch data
           if (selectedVoter) {
+            // Update voter di state jika edit mode
             setVoters((prev) =>
               prev.map((voter) =>
-                voter.id === selectedVoter.id
-                  ? { ...voter, ...formData }
-                  : voter
+                voter.id === formData.id ? { ...voter, ...formData } : voter
               )
             );
-            toast({
-              title: "Voter updated",
-              description: `${formData.fullName}'s information has been updated.`,
-            });
           } else {
-            const newVoter = { id: Date.now().toString(), ...formData };
-            setVoters((prev) => [...prev, newVoter]);
-            toast({
-              title: "Voter added",
-              description: `${formData.fullName} has been added to the system.`,
-            });
+            // Tambahkan voter baru ke state jika add mode
+            setVoters((prev) => [...prev, formData]);
           }
-          setIsModalOpen(false);
-          setDataChanged((prev) => !prev);
+          setSelectedVoter(null); // Reset selected voter
         }}
         voter={selectedVoter}
       />
 
-      {/* Delete Confirmation Dialog */}
       <DeleteConfirmation
         isOpen={isDeleteDialogOpen}
         onClose={() => setIsDeleteDialogOpen(false)}
@@ -314,8 +308,7 @@ export default function VotersPage() {
           setVoters((prev) =>
             prev.filter((voter) => !selectedVoters.includes(voter.id))
           );
-          toast({
-            title: "Voters deleted",
+          toast("Voters deleted", {
             description: `${selectedVoters.length} voters have been removed.`,
           });
           setIsDeleteDialogOpen(false);

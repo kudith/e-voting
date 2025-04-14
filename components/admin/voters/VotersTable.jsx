@@ -67,7 +67,7 @@ export default function VotersTable({
       variants={tableAnimation}
       initial="hidden"
       animate="visible"
-      className="rounded-md border overflow-hidden"
+      className="rounded-md border overflow-hidden max-w-7xl"
     >
       <div className="overflow-x-auto">
         <Table>
@@ -201,18 +201,20 @@ export default function VotersTable({
                   <TableCell>{voter.email}</TableCell>
                   <TableCell>{voter.voterCode}</TableCell>
                   <TableCell>{voter.phone}</TableCell>
-                  <TableCell>{voter.faculty?.name || "N/A"}</TableCell>
-                  <TableCell>{voter.major?.name || "N/A"}</TableCell>
+                  <TableCell>{voter.faculty?.name}</TableCell>
+                  <TableCell>{voter.major?.name}</TableCell>
                   <TableCell>{voter.year}</TableCell>
                   <TableCell>
                     <span
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        voter.voted
+                        Array.isArray(voter.voterElections) &&
+                        voter.voterElections.some((ve) => ve.hasVoted)
                           ? "bg-green-100 text-green-800"
                           : "bg-yellow-100 text-yellow-800"
                       }`}
                     >
-                      {voter.voted ? (
+                      {Array.isArray(voter.voterElections) &&
+                      voter.voterElections.some((ve) => ve.hasVoted) ? (
                         <>
                           <Check className="mr-1 h-3 w-3" />
                           Sudah Memilih
@@ -226,12 +228,12 @@ export default function VotersTable({
                     </span>
                   </TableCell>
                   <TableCell>
-                    {voter.voterElections.length > 0 ? (
+                    {Array.isArray(voter.voterElections) &&
+                    voter.voterElections.length > 0 ? (
                       <ul className="list-disc pl-4">
                         {voter.voterElections.map((ve) => (
                           <li key={ve.id}>
-                            {ve.election?.title || "Unknown Election"}{" "}
-                            {ve.eligible ? "(Eligible)" : "(Not Eligible)"}
+                            {ve.election?.title || "Unknown Election"}
                           </li>
                         ))}
                       </ul>
