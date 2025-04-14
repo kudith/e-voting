@@ -157,30 +157,28 @@ export default function CandidatesForm({
             </div>
 
             {/* Election ID Field */}
-           <div className="grid gap-2">
-  <Label htmlFor="electionId">Pemilihan *</Label>
-  <Select
-    value={formData.electionId}
-    onValueChange={handleElectionChange}
-  >
-    <SelectTrigger id="electionId" className="w-full">
-      <SelectValue placeholder="Pilih pemilihan" />
-    </SelectTrigger>
-    <SelectContent>
-      {elections && elections.length > 0 ? (
-        elections.map((election) => (
-          <SelectItem key={election.id} value={election.id}>
-            {election.title}
-          </SelectItem>
-        ))
-      ) : (
-        <SelectItem disabled>
-          Tidak ada pemilihan tersedia
-        </SelectItem>
-      )}
-    </SelectContent>
-  </Select>
-</div>
+            <div className="grid gap-2">
+              <Label htmlFor="electionId">Pemilihan *</Label>
+              <Select
+                value={formData.electionId}
+                onValueChange={handleElectionChange}
+              >
+                <SelectTrigger id="electionId">
+                  <SelectValue placeholder="Pilih pemilihan" />
+                </SelectTrigger>
+                <SelectContent>
+                  {elections && elections.length > 0 ? (
+                    elections.map((election) => (
+                      <SelectItem key={election.id} value={election.id}>
+                        {election.title}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem disabled>Tidak ada pemilihan tersedia</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <DialogFooter className="px-8 pb-8 flex justify-end gap-4">
             <Button variant="outline" onClick={onClose}>

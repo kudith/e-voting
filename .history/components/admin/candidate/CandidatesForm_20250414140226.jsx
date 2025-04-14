@@ -6,13 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -46,7 +39,7 @@ export default function CandidatesForm({
           vision: candidate.vision || "",
           mission: candidate.mission || "",
           shortBio: candidate.shortBio || "",
-          electionId: candidate.election ? String(candidate.election.id) : "",
+          electionId: candidate.election ? String(candidate.election.id) : "", // Safely access election.id
         });
       } else {
         setFormData({
@@ -55,7 +48,7 @@ export default function CandidatesForm({
           vision: "",
           mission: "",
           shortBio: "",
-          electionId: "",
+          electionId: "", // Set electionId to an empty string
         });
       }
     }
@@ -65,37 +58,30 @@ export default function CandidatesForm({
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handleElectionChange = (value) => {
-    setFormData((prev) => ({
-      ...prev,
-      electionId: value,
+      [name]: name === "electionId" ? String(value) : value, // Ensure electionId is a string
     }));
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-screen-lg w-full p-0 overflow-hidden">
+      <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden">
         <motion.div
           initial={{ opacity: 0, scale: 0.8, y: 50 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.8, y: 50 }}
           transition={{ type: "spring", damping: 25, stiffness: 300 }}
         >
-          <DialogHeader className="px-8 pt-8">
-            <DialogTitle className="text-2xl font-bold">
+          <DialogHeader className="px-6 pt-6">
+            <DialogTitle>
               {candidate ? "Edit Kandidat" : "Tambah Kandidat"}
             </DialogTitle>
-            <DialogDescription className="text-gray-600">
+            <DialogDescription>
               {candidate
-                ? "Perbarui informasi kandidat pada formulir di bawah ini."
-                : "Isi detail untuk menambahkan kandidat baru ke sistem."}
+                ? "Perbarui informasi kandidat."
+                : "Isi formulir untuk menambahkan kandidat baru."}
             </DialogDescription>
           </DialogHeader>
-          <div className="px-8 py-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="px-6 py-4 grid gap-4">
             {/* Name Field */}
             <div className="grid gap-2">
               <Label htmlFor="name">Nama *</Label>
@@ -157,32 +143,29 @@ export default function CandidatesForm({
             </div>
 
             {/* Election ID Field */}
-           <div className="grid gap-2">
-  <Label htmlFor="electionId">Pemilihan *</Label>
-  <Select
-    value={formData.electionId}
-    onValueChange={handleElectionChange}
-  >
-    <SelectTrigger id="electionId" className="w-full">
-      <SelectValue placeholder="Pilih pemilihan" />
-    </SelectTrigger>
-    <SelectContent>
-      {elections && elections.length > 0 ? (
-        elections.map((election) => (
-          <SelectItem key={election.id} value={election.id}>
-            {election.title}
-          </SelectItem>
-        ))
-      ) : (
-        <SelectItem disabled>
-          Tidak ada pemilihan tersedia
-        </SelectItem>
-      )}
-    </SelectContent>
-  </Select>
-</div>
+            <div className="grid gap-2">
+              <Label htmlFor="electionId">Pemilihan *</Label>
+              <select
+                id="electionId"
+                name="electionId"
+                value={formData.electionId}
+                onChange={handleInputChange}
+                className="border rounded-md p-2"
+              >
+                <option value="">Pilih pemilihan</option>
+                {elections && elections.length > 0 ? (
+                  elections.map((election) => (
+                    <option key={election.id} value={election.id}>
+                      {election.title}
+                    </option>
+                  ))
+                ) : (
+                  <option disabled>Tidak ada pemilihan tersedia</option>
+                )}
+              </select>
+            </div>
           </div>
-          <DialogFooter className="px-8 pb-8 flex justify-end gap-4">
+          <DialogFooter className="px-6 pb-6">
             <Button variant="outline" onClick={onClose}>
               Batal
             </Button>
