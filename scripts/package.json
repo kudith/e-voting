@@ -1,0 +1,12 @@
+{
+  "name": "e-voting-scripts",
+  "version": "1.0.0",
+  "description": "Scripts for e-voting system",
+  "main": "createTestVoters.js",
+  "scripts": {
+    "create-voters": "node createTestVoters.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.2"
+  }
+} 
