@@ -54,7 +54,15 @@ export default function VotersPage() {
   const [selectedVoters, setSelectedVoters] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [fakultasFilter, setFakultasFilter] = useState("all");
+  const [jurusanFilter, setJurusanFilter] = useState("all");
+  const [angkatanFilter, setAngkatanFilter] = useState("all");
   const [error, setError] = useState(null);
+
+  // State for filter options
+  const [faculties, setFaculties] = useState([]);
+  const [majors, setMajors] = useState([]);
+  const [years, setYears] = useState([]);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -66,14 +74,63 @@ export default function VotersPage() {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await fetch("/api/voter/getAllVoters");
-        if (!response.ok) {
+        // Fetch voters data
+        const votersResponse = await fetch("/api/voter/getAllVoters");
+        if (!votersResponse.ok) {
           throw new Error("Failed to fetch voters data");
         }
-        const data = await response.json();
-        setVoters(data);
+        const votersData = await votersResponse.json();
+
+        // Fetch voter elections data
+        const voterElectionsResponse = await fetch("/api/voterElection/getAllVoterElection");
+        if (!voterElectionsResponse.ok) {
+          throw new Error("Failed to fetch voter elections data");
+        }
+        const voterElectionsData = await voterElectionsResponse.json();
+
+        // Create a map of voter IDs to their elections
+        const voterElectionsMap = new Map();
+        voterElectionsData.forEach((ve) => {
+          if (!voterElectionsMap.has(ve.voter.id)) {
+            voterElectionsMap.set(ve.voter.id, {
+              elections: [],
+              hasVoted: false
+            });
+          }
+          const voterData = voterElectionsMap.get(ve.voter.id);
+          voterData.elections.push({
+            id: ve.election.id,
+            title: ve.election.title,
+            startDate: ve.election.startDate,
+            endDate: ve.election.endDate,
+            status: ve.election.status,
+            isEligible: ve.isEligible,
+            hasVoted: ve.hasVoted
+          });
+          if (ve.hasVoted) {
+            voterData.hasVoted = true;
+          }
+        });
+
+        // Combine voters data with their elections
+        const combinedData = votersData.map(voter => ({
+          ...voter,
+          elections: voterElectionsMap.get(voter.id)?.elections || [],
+          hasVoted: voterElectionsMap.get(voter.id)?.hasVoted || false
+        }));
+
+        setVoters(combinedData);
+        
+        // Extract unique faculties, majors, and years for filters
+        const uniqueFaculties = [...new Set(votersData.filter(v => v.faculty).map(v => v.faculty))];
+        const uniqueMajors = [...new Set(votersData.filter(v => v.major).map(v => v.major))];
+        const uniqueYears = [...new Set(votersData.filter(v => v.year).map(v => v.year))].sort((a, b) => b - a);
+        
+        setFaculties(uniqueFaculties);
+        setMajors(uniqueMajors);
+        setYears(uniqueYears);
       } catch (error) {
-        console.error("Error fetching voters:", error);
+        console.error("Error fetching data:", error);
         setError("Tidak ada data pemilih");
       } finally {
         setIsLoading(false);
@@ -100,20 +157,73 @@ export default function VotersPage() {
     // Apply status filter
     if (statusFilter !== "all") {
       filteredData = filteredData.filter((voter) => {
-        const hasVoted = Array.isArray(voter.voterElections) && 
-          voter.voterElections.some(ve => ve.hasVoted);
-        
-        return statusFilter === "Voted" ? hasVoted : !hasVoted;
+        return statusFilter === "Voted" ? voter.hasVoted : !voter.hasVoted;
       });
+    }
+    
+    // Apply fakultas filter
+    if (fakultasFilter !== "all") {
+      filteredData = filteredData.filter((voter) => 
+        voter.faculty && voter.faculty.id === fakultasFilter
+      );
+    }
+    
+    // Apply jurusan filter
+    if (jurusanFilter !== "all") {
+      filteredData = filteredData.filter((voter) => 
+        voter.major && voter.major.id === jurusanFilter
+      );
+    }
+    
+    // Apply angkatan filter
+    if (angkatanFilter !== "all") {
+      filteredData = filteredData.filter((voter) => 
+        voter.year === angkatanFilter
+      );
     }
 
     // Apply sorting
     if (sortConfig.key) {
       filteredData.sort((a, b) => {
-        if (a[sortConfig.key] < b[sortConfig.key]) {
+        // Handle nested properties
+        let valueA, valueB;
+        
+        switch (sortConfig.key) {
+          case "fakultas":
+            valueA = a.faculty?.name || "";
+            valueB = b.faculty?.name || "";
+            break;
+          case "jurusan":
+            valueA = a.major?.name || "";
+            valueB = b.major?.name || "";
+            break;
+          case "angkatan":
+            valueA = a.year || "";
+            valueB = b.year || "";
+            break;
+          case "votingStatus":
+            valueA = a.hasVoted ? 1 : 0;
+            valueB = b.hasVoted ? 1 : 0;
+            break;
+          case "elections":
+            valueA = a.elections?.length || 0;
+            valueB = b.elections?.length || 0;
+            break;
+          default:
+            valueA = a[sortConfig.key] || "";
+            valueB = b[sortConfig.key] || "";
+        }
+        
+        // Handle string comparison
+        if (typeof valueA === "string" && typeof valueB === "string") {
+          valueA = valueA.toLowerCase();
+          valueB = valueB.toLowerCase();
+        }
+        
+        if (valueA < valueB) {
           return sortConfig.direction === "ascending" ? -1 : 1;
         }
-        if (a[sortConfig.key] > b[sortConfig.key]) {
+        if (valueA > valueB) {
           return sortConfig.direction === "ascending" ? 1 : -1;
         }
         return 0;
@@ -121,6 +231,59 @@ export default function VotersPage() {
     }
 
     return filteredData;
+  };
+
+  // Get active filters for display
+  const getActiveFilters = () => {
+    const filters = [];
+    
+    if (statusFilter !== "all") {
+      filters.push({
+        label: "Status",
+        value: statusFilter === "Voted" ? "Sudah Memilih" : "Belum Memilih",
+        onRemove: () => setStatusFilter("all")
+      });
+    }
+    
+    if (fakultasFilter !== "all") {
+      const faculty = faculties.find(f => f.id === fakultasFilter);
+      if (faculty) {
+        filters.push({
+          label: "Fakultas",
+          value: faculty.name,
+          onRemove: () => setFakultasFilter("all")
+        });
+      }
+    }
+    
+    if (jurusanFilter !== "all") {
+      const major = majors.find(m => m.id === jurusanFilter);
+      if (major) {
+        filters.push({
+          label: "Jurusan",
+          value: major.name,
+          onRemove: () => setJurusanFilter("all")
+        });
+      }
+    }
+    
+    if (angkatanFilter !== "all") {
+      filters.push({
+        label: "Angkatan",
+        value: angkatanFilter,
+        onRemove: () => setAngkatanFilter("all")
+      });
+    }
+    
+    return filters;
+  };
+  
+  // Clear all filters
+  const clearAllFilters = () => {
+    setStatusFilter("all");
+    setFakultasFilter("all");
+    setJurusanFilter("all");
+    setAngkatanFilter("all");
   };
 
   // Paginate voters
@@ -318,6 +481,17 @@ export default function VotersPage() {
                     setSearchQuery={setSearchQuery}
                     statusFilter={statusFilter}
                     setStatusFilter={setStatusFilter}
+                    fakultasFilter={fakultasFilter}
+                    setFakultasFilter={setFakultasFilter}
+                    jurusanFilter={jurusanFilter}
+                    setJurusanFilter={setJurusanFilter}
+                    angkatanFilter={angkatanFilter}
+                    setAngkatanFilter={setAngkatanFilter}
+                    faculties={faculties}
+                    majors={majors}
+                    years={years}
+                    activeFilters={getActiveFilters()}
+                    clearFilters={clearAllFilters}
                   />
                   <Button 
                     onClick={() => setIsModalOpen(true)} 

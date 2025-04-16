@@ -62,7 +62,7 @@ const data = {
     },
     {
       title: "Hak Pilih", // Menu baru
-      url: "/admin/voting-rights",
+      url: "/admin/dashboard/voting-rights",
       icon: IconFolder,
     },
     {

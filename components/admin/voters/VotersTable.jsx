@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import {
   Pencil,
   Trash2,
@@ -20,6 +21,7 @@ import {
   ArrowUp,
   ArrowDown,
   Loader2,
+  Calendar,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -170,7 +172,15 @@ export default function VotersTable({
                     {getSortIcon("votingStatus")}
                   </div>
                 </TableHead>
-                <TableHead>Daftar Pemilu</TableHead>
+                <TableHead
+                  className="cursor-pointer hover:text-primary transition-colors"
+                  onClick={() => requestSort("elections")}
+                >
+                  <div className="flex items-center">
+                    Daftar Pemilu
+                    {getSortIcon("elections")}
+                  </div>
+                </TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -225,7 +235,11 @@ export default function VotersTable({
                     </TableCell>
                     <TableCell className="font-medium">{voter.name}</TableCell>
                     <TableCell className="max-w-[200px] truncate">{voter.email}</TableCell>
-                    <TableCell className="font-mono text-sm">{voter.voterCode}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="font-mono text-[11px] bg-muted/30 border-muted-foreground/20 px-2 py-0.5">
+                        {voter.voterCode}
+                      </Badge>
+                    </TableCell>
                     <TableCell>{voter.phone}</TableCell>
                     <TableCell>{voter.faculty?.name}</TableCell>
                     <TableCell>{voter.major?.name}</TableCell>
@@ -234,14 +248,12 @@ export default function VotersTable({
                       <span
                         className={cn(
                           "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium transition-all duration-200",
-                          Array.isArray(voter.voterElections) &&
-                          voter.voterElections.some((ve) => ve.hasVoted)
+                          voter.hasVoted
                             ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
                             : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
                         )}
                       >
-                        {Array.isArray(voter.voterElections) &&
-                        voter.voterElections.some((ve) => ve.hasVoted) ? (
+                        {voter.hasVoted ? (
                           <>
                             <Check className="mr-1 h-3 w-3" />
                             Sudah Memilih
@@ -255,17 +267,29 @@ export default function VotersTable({
                       </span>
                     </TableCell>
                     <TableCell>
-                      {Array.isArray(voter.voterElections) &&
-                      voter.voterElections.length > 0 ? (
-                        <ul className="list-disc pl-4 max-h-20 overflow-y-auto">
-                          {voter.voterElections.map((ve) => (
-                            <li key={ve.id} className="text-sm">
-                              {ve.election?.title || "Unknown Election"}
-                            </li>
+                      {voter.elections && voter.elections.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5 max-w-[300px]">
+                          {voter.elections.map((election) => (
+                            <Badge
+                              key={election.id}
+                              variant={election.hasVoted ? "success" : election.isEligible ? "outline" : "secondary"}
+                              className={cn(
+                                "flex items-center gap-1 px-2 py-1 text-xs font-medium transition-all duration-200",
+                                election.hasVoted && "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 hover:bg-green-200",
+                                !election.hasVoted && election.isEligible && "bg-primary/5 text-primary hover:bg-primary/10",
+                                !election.isEligible && "bg-muted text-muted-foreground hover:bg-muted/80"
+                              )}
+                            >
+                              <Calendar className="h-3 w-3" />
+                              {election.title}
+                              {election.hasVoted && <Check className="h-3 w-3 ml-1" />}
+                            </Badge>
                           ))}
-                        </ul>
+                        </div>
                       ) : (
-                        <span className="text-muted-foreground text-sm">Belum mengikuti pemilu</span>
+                        <span className="text-muted-foreground text-sm italic">
+                          Belum mengikuti pemilu
+                        </span>
                       )}
                     </TableCell>
                     <TableCell className="text-right">
