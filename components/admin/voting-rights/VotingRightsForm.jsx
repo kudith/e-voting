@@ -691,7 +691,6 @@ export default function VotingRightsForm({ isOpen, onClose, onSave, voterElectio
                           <Select
                             value={formData.electionId}
                             onValueChange={(value) => handleFieldChange("electionId", value)}
-                            disabled={!!voterElection}
                           >
                             <SelectTrigger 
                               id="electionId"

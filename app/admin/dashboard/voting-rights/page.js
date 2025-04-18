@@ -235,8 +235,7 @@ export default function VotingRightsPage() {
         });
 
         if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.message || 'Failed to delete voting right');
+          throw new Error('Failed to delete voting right');
         }
 
         const result = await response.json();
@@ -251,7 +250,7 @@ export default function VotingRightsPage() {
         
         // Show success toast
         toast.success("Berhasil", {
-          description: `Hak pilih untuk ${result.voterName || selectedVoterElection.voter?.name || 'N/A'} telah dihapus.`,
+          description: `Hak pilih untuk ${result.voterName} telah dihapus.`,
         });
       } 
       // If deleting multiple voter elections
@@ -404,11 +403,19 @@ export default function VotingRightsPage() {
                   voterElections={paginatedVoterElections}
                   isLoading={isLoading}
                   selectedVoterElections={selectedVoterElections}
-                  onSelectVoterElection={(id, checked) =>
-                    setSelectedVoterElections((prev) =>
-                      checked ? [...prev, id] : prev.filter((v) => v !== id)
-                    )
-                  }
+                  onSelectVoterElection={(id, checked) => {
+                    if (checked) {
+                      // Add the ID if it's not already in the array
+                      setSelectedVoterElections((prev) => 
+                        prev.includes(id) ? prev : [...prev, id]
+                      );
+                    } else {
+                      // Remove the ID if it's in the array
+                      setSelectedVoterElections((prev) => 
+                        prev.filter((v) => v !== id)
+                      );
+                    }
+                  }}
                   onSelectAll={(checked) =>
                     setSelectedVoterElections(
                       checked ? paginatedVoterElections.map((v) => v.id) : []
@@ -434,16 +441,17 @@ export default function VotingRightsPage() {
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2 bg-muted/30 px-3 py-1.5 rounded-md">
                       <span className="text-sm font-medium text-muted-foreground">Tampilkan</span>
-                      <Select onValueChange={handleRowsPerPageChange} defaultValue={rowsPerPage.toString()}>
-                        <SelectTrigger className="w-[60px] h-7 text-sm border-0 bg-transparent p-0 focus:ring-0">
-                          <SelectValue placeholder={rowsPerPage} />
+                      <Select defaultValue="10" onValueChange={handleRowsPerPageChange}>
+                        <SelectTrigger className="w-[px] h-7 text-sm border-1 bg-transparent p-2 focus:ring-0">
+                          <SelectValue placeholder="10" />
                         </SelectTrigger>
                         <SelectContent>
-                          {[10, 20, 30, 40, 50, 100].map((size) => (
-                            <SelectItem key={size} value={size.toString()}>
-                              {size}
-                            </SelectItem>
-                          ))}
+                          <SelectItem value="10">10</SelectItem>
+                          <SelectItem value="20">20</SelectItem>
+                          <SelectItem value="30">30</SelectItem>
+                          <SelectItem value="40">40</SelectItem>
+                          <SelectItem value="50">50</SelectItem>
+                          <SelectItem value="100">100</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -452,7 +460,7 @@ export default function VotingRightsPage() {
                       <span className="text-sm font-medium text-primary">{filteredVoterElectionsLength}</span>
                       <span className="text-sm text-muted-foreground">dari</span>
                       <span className="text-sm font-medium">{totalVoterElections}</span>
-                      <span className="text-sm text-muted-foreground">hak pilih</span>
+                      <span className="text-sm text-muted-foreground whitespace-nowrap">hak pilih</span>
                     </div>
                   </div>
                   
