@@ -79,14 +79,7 @@ export async function POST(req) {
             is_verified: true,
             details: { email: data.email },
           },
-          {
-            type: "phone",
-            is_verified: false,
-            details: {
-              phone: data.phone,
-              phone_country_id: "id" // Indonesia country code
-            },
-          },
+          // We'll add phone identity after user creation to avoid conflicts
           {
             type: "username",
             details: { username: voterCode },
@@ -101,12 +94,10 @@ export async function POST(req) {
       
       // Try to parse the error as JSON to extract specific error codes
       let kindeError = null;
-      let errorDetails = null;
       try {
         const errorJson = JSON.parse(errorText);
         if (errorJson.errors && errorJson.errors.length > 0) {
           kindeError = errorJson.errors[0].code;
-          errorDetails = errorJson.errors[0].message;
           console.error("[KINDE ERROR DETAILS]:", JSON.stringify(errorJson.errors, null, 2));
         }
       } catch (e) {
@@ -116,21 +107,88 @@ export async function POST(req) {
       
       // Handle specific Kinde errors
       if (kindeError === "USER_ALREADY_EXISTS") {
-        return NextResponse.json(
-          { 
-            error: "Email atau nomor telepon sudah terdaftar dalam sistem. Silakan gunakan data yang berbeda.",
-            kindeError: kindeError,
-            details: errorDetails || "Terjadi konflik dengan data yang sudah ada"
-          },
-          { status: 409 }
-        );
+        // Cek apakah user sudah ada di database kita
+        const existingVoter = await prisma.voter.findUnique({
+          where: { email: data.email }
+        });
+
+        if (existingVoter) {
+          return NextResponse.json(
+            { 
+              error: "Email sudah terdaftar dalam sistem. Silakan gunakan email lain.",
+              kindeError: kindeError
+            },
+            { status: 409 }
+          );
+        } else {
+          // Coba pengecekan email dan nomor telepon secara manual
+          try {
+            // Cek email
+            const emailCheckRes = await fetch(`${KINDE_API_URL}/api/v1/users?email=${encodeURIComponent(data.email)}`, {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${KINDE_API_KEY}`,
+              },
+            });
+            
+            const emailExists = emailCheckRes.ok && 
+              (await emailCheckRes.json()).users?.length > 0;
+            
+            // Cek nomor telepon (hapus prefix +62 untuk perbandingan)
+            const phone = data.phone.replace(/^\+62/, '');
+            const phoneCheckRes = await fetch(`${KINDE_API_URL}/api/v1/users`, {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${KINDE_API_KEY}`,
+              },
+            });
+            
+            let phoneExists = false;
+            if (phoneCheckRes.ok) {
+              const users = (await phoneCheckRes.json()).users || [];
+              phoneExists = users.some(user => 
+                user.phone && user.phone.replace(/^\+62/, '') === phone
+              );
+            }
+            
+            if (emailExists) {
+              return NextResponse.json({
+                error: "Email sudah terdaftar dalam sistem. Silakan gunakan email lain.",
+                detail: "Terdeteksi email yang sama di sistem"
+              }, { status: 409 });
+            }
+            
+            if (phoneExists) {
+              return NextResponse.json({
+                error: "Nomor telepon sudah terdaftar dalam sistem. Silakan gunakan nomor telepon lain.",
+                detail: "Terdeteksi nomor telepon yang sama di sistem"
+              }, { status: 409 });
+            }
+          } catch (checkError) {
+            console.error("[CHECK ERROR]:", checkError);
+          }
+          
+          // Jika tidak ada di database kita, berarti ada masalah dengan Kinde
+          console.error("[KINDE CONFLICT]: User exists in Kinde but not in our database", {
+            email: data.email,
+            phone: data.phone
+          });
+          
+          return NextResponse.json(
+            { 
+              error: "Terjadi konflik dengan sistem autentikasi. Silakan coba dengan email dan nomor telepon yang berbeda.",
+              detail: "Sistem mendeteksi data serupa yang sudah terdaftar",
+              kindeError: kindeError
+            },
+            { status: 409 }
+          );
+        }
       }
       
       return NextResponse.json(
         { 
           error: "Gagal membuat user di sistem autentikasi. Silakan coba lagi.",
-          kindeError: kindeError,
-          details: errorDetails || "Silakan coba dengan data yang berbeda"
+          kindeError: kindeError
         },
         { status: 500 }
       );

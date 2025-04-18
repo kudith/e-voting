@@ -16,13 +16,8 @@ export async function middleware(request) {
     const roles = await getClaim("roles");
     const roleList = roles?.value?.map((r) => r.key) || [];
 
-    // Handle callback URL
-    if (request.nextUrl.pathname.startsWith("/api/auth/kinde_callback")) {
-        return NextResponse.next();
-    }
-
-    // Handle root path and dashboard redirection
-    if (request.nextUrl.pathname === "/" || request.nextUrl.pathname === "/dashboard") {
+    // Handle root path redirection
+    if (request.nextUrl.pathname === "/") {
         if (!authenticated) {
             return NextResponse.next();
         }
@@ -79,5 +74,5 @@ export async function middleware(request) {
 }
 
 export const config = {
-    matcher: ["/dashboard", "/api/auth/kinde_callback", "/admin/:path*", "/voter/:path*"],
+    matcher: ["/admin/:path*", "/voter/:path*"],
 };
