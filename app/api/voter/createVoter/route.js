@@ -15,7 +15,8 @@ const voterSchema = z.object({
   email: z.string().email("Invalid email format"),
   phone: z
     .string()
-    .regex(/^\+\d{1,3}\d{9,12}$/, "Phone must include country code, e.g., +628123456789"),
+    .regex(/^(0|\+62)\d{9,13}$/, "Phone must start with 0 or +62 and have 10-15 digits")
+    .transform(val => val.startsWith('0') ? '+62' + val.slice(1) : val),
   facultyId: z.string().min(1, "Faculty ID is required"),
   majorId: z.string().min(1, "Major ID is required"),
   year: z.string().regex(/^\d{4}$/, "Year must be a 4-digit number"),
@@ -61,7 +62,7 @@ export async function POST(req) {
     // Generate unique voter code
     const voterCode = await generateVoterCode(faculty, major);
 
-    // Create user in Kinde
+    // Create user in Kinde with modified approach to avoid conflicts
     const kindeRes = await fetch(`${KINDE_API_URL}/api/v1/user`, {
       method: "POST",
       headers: {
@@ -83,7 +84,7 @@ export async function POST(req) {
             is_verified: false,
             details: {
               phone: data.phone,
-              phone_country_id: "id",
+              phone_country_id: "id" // Indonesia country code
             },
           },
           {
@@ -100,20 +101,36 @@ export async function POST(req) {
       
       // Try to parse the error as JSON to extract specific error codes
       let kindeError = null;
+      let errorDetails = null;
       try {
         const errorJson = JSON.parse(errorText);
         if (errorJson.errors && errorJson.errors.length > 0) {
           kindeError = errorJson.errors[0].code;
+          errorDetails = errorJson.errors[0].message;
+          console.error("[KINDE ERROR DETAILS]:", JSON.stringify(errorJson.errors, null, 2));
         }
       } catch (e) {
         // If parsing fails, just use the raw error text
         kindeError = errorText;
       }
       
+      // Handle specific Kinde errors
+      if (kindeError === "USER_ALREADY_EXISTS") {
+        return NextResponse.json(
+          { 
+            error: "Email atau nomor telepon sudah terdaftar dalam sistem. Silakan gunakan data yang berbeda.",
+            kindeError: kindeError,
+            details: errorDetails || "Terjadi konflik dengan data yang sudah ada"
+          },
+          { status: 409 }
+        );
+      }
+      
       return NextResponse.json(
         { 
-          error: "Failed to create Kinde user",
-          kindeError: kindeError
+          error: "Gagal membuat user di sistem autentikasi. Silakan coba lagi.",
+          kindeError: kindeError,
+          details: errorDetails || "Silakan coba dengan data yang berbeda"
         },
         { status: 500 }
       );

@@ -279,8 +279,17 @@ export default function VoterForm({ isOpen, onClose, onSave, voter }) {
   const handlePhoneChange = (e) => {
     let value = e.target.value;
 
-    if (value.startsWith("0")) {
-      value = "+62" + value.slice(1);
+    // Hapus semua karakter non-digit
+    value = value.replace(/\D/g, '');
+
+    // Pastikan nomor dimulai dengan 0
+    if (value && !value.startsWith('0')) {
+      value = '0' + value;
+    }
+
+    // Batasi panjang nomor
+    if (value.length > 13) {
+      value = value.slice(0, 13);
     }
 
     setFormData((prev) => ({ ...prev, phone: value }));
@@ -365,12 +374,25 @@ export default function VoterForm({ isOpen, onClose, onSave, voter }) {
           return acc;
         }, {});
         setErrors(fieldErrors);
+        // Reset form data kecuali untuk field yang error
+        setFormData(prev => ({
+          ...prev,
+          fullName: fieldErrors.fullName ? "" : prev.fullName,
+          email: fieldErrors.email ? "" : prev.email,
+          facultyId: fieldErrors.facultyId ? "" : prev.facultyId,
+          majorId: fieldErrors.majorId ? "" : prev.majorId,
+          year: fieldErrors.year ? "" : prev.year,
+          phone: fieldErrors.phone ? "" : prev.phone,
+          status: fieldErrors.status ? "active" : prev.status,
+        }));
       } else {
         console.error("Kesalahan menyimpan pemilih:", error); // Log kesalahan fetch
         toast.error("Kesalahan", {
           description:
             error.message || "Gagal menyimpan pemilih. Silakan coba lagi.",
         });
+        // Reset form jika terjadi error server
+        resetForm();
       }
     } finally {
       setIsSubmitting(false);

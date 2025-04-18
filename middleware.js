@@ -16,6 +16,33 @@ export async function middleware(request) {
     const roles = await getClaim("roles");
     const roleList = roles?.value?.map((r) => r.key) || [];
 
+    // Handle callback URL
+    if (request.nextUrl.pathname.startsWith("/api/auth/kinde_callback")) {
+        return NextResponse.next();
+    }
+
+    // Handle root path and dashboard redirection
+    if (request.nextUrl.pathname === "/" || request.nextUrl.pathname === "/dashboard") {
+        if (!authenticated) {
+            return NextResponse.next();
+        }
+
+        const hasAdminPermission = accessToken.permissions?.includes("access:admin");
+        const hasAdminRole = roleList.includes("admin");
+        const hasVoterRole = roleList.includes("voter");
+
+        if (hasAdminPermission && hasAdminRole) {
+            url.pathname = "/admin/dashboard";
+            return NextResponse.redirect(url);
+        } else if (hasVoterRole) {
+            url.pathname = "/voter/dashboard";
+            return NextResponse.redirect(url);
+        } else {
+            url.pathname = "/unauthorized";
+            return NextResponse.redirect(url);
+        }
+    }
+
     // Access control for /admin
     if (request.nextUrl.pathname.startsWith("/admin")) {
         const hasAdminPermission = accessToken.permissions?.includes("access:admin");
@@ -32,8 +59,8 @@ export async function middleware(request) {
         }
     }
 
-    // Access control for /dashboard
-    if (request.nextUrl.pathname.startsWith("/dashboard")) {
+    // Access control for /voter
+    if (request.nextUrl.pathname.startsWith("/voter")) {
         const hasVoterRole = roleList.includes("voter");
 
         if (!authenticated || !hasVoterRole) {
@@ -52,5 +79,5 @@ export async function middleware(request) {
 }
 
 export const config = {
-    matcher: ["/admin", "/admin/:path*", "/dashboard", "/dashboard/:path*"],
+    matcher: ["/dashboard", "/api/auth/kinde_callback", "/admin/:path*", "/voter/:path*"],
 };
