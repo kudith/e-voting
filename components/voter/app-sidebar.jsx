@@ -19,7 +19,8 @@ import {
   IconUsers,
 } from "@tabler/icons-react"
 
-import { NavMain } from "@/components/nav-main"
+import { NavDocuments } from "@/components/nav-documents"
+import { NavMain } from "@/components/voter/nav-main"
 import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
 import {

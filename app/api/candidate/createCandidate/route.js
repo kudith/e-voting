@@ -48,21 +48,15 @@ export async function POST(req) {
       );
     }
 
-    console.log("Creating a new candidate with data:", data);
+    console.log("Creating candidate with data:", JSON.stringify(data, null, 2));
 
     // Buat kandidat baru
-    await prisma.candidate.create({
-      data: {
-        name: data.name,
-        photo: data.photo,
-        vision: data.vision,
-        mission: data.mission,
-        shortBio: data.shortBio,
-        electionId: data.electionId,
-      },
+    const newCandidate = await prisma.candidate.create({
+      data: data,
     });
 
-    console.log("Candidate created successfully");
+    console.log("New candidate created successfully:", newCandidate.id, newCandidate.name);
+    console.log("Photo URL:", newCandidate.photo);
 
     // Respons sukses yang profesional
     return NextResponse.json(

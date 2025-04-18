@@ -8,50 +8,36 @@ export async function middleware(request) {
     const user = await getUser();
     const url = request.nextUrl.clone();
 
-    // Log user information
-    const accessToken = await getAccessToken();
-    console.log(`[Access Token] Decoded Token:`, accessToken);
-
-    // Check role claims (array of roles)
+    // Get user roles and permissions
     const roles = await getClaim("roles");
     const roleList = roles?.value?.map((r) => r.key) || [];
+    const accessToken = await getAccessToken();
+    const permissions = accessToken?.permissions || [];
 
-    // Handle root path redirection
+    console.log(`[Middleware] User: ${user?.email || 'Unknown'}`);
+    console.log(`[Middleware] Roles: ${JSON.stringify(roles)}`);
+    console.log(`[Middleware] Role List: ${roleList.join(', ')}`);
+    console.log(`[Middleware] Permissions: ${permissions.join(', ')}`);
+    console.log(`[Middleware] Access Token: ${JSON.stringify(accessToken)}`);
+
+    // Allow access to root path for everyone
     if (request.nextUrl.pathname === "/") {
-        if (!authenticated) {
-            return NextResponse.next();
-        }
-
-        const hasAdminPermission = accessToken.permissions?.includes("access:admin");
-        const hasAdminRole = roleList.includes("admin");
-        const hasVoterRole = roleList.includes("voter");
-
-        if (hasAdminPermission && hasAdminRole) {
-            url.pathname = "/admin/dashboard";
-            return NextResponse.redirect(url);
-        } else if (hasVoterRole) {
-            url.pathname = "/voter/dashboard";
-            return NextResponse.redirect(url);
-        } else {
-            url.pathname = "/unauthorized";
-            return NextResponse.redirect(url);
-        }
+        return NextResponse.next();
     }
 
     // Access control for /admin
     if (request.nextUrl.pathname.startsWith("/admin")) {
-        const hasAdminPermission = accessToken.permissions?.includes("access:admin");
         const hasAdminRole = roleList.includes("admin");
+        const hasAdminPermission = permissions.includes("access:admin");
 
-        if (!authenticated || !hasAdminPermission || !hasAdminRole) {
-            console.log(
-                `[Access Denied] Admin access required. User: ${user?.email || "Unknown"}`
-            );
+        console.log(`[Middleware] Admin Check - Role: ${hasAdminRole}, Permission: ${hasAdminPermission}`);
+
+        if (!authenticated || !hasAdminRole || !hasAdminPermission) {
+            console.log(`[Middleware] Access denied to admin area for user: ${user?.email || "Unknown"}`);
             url.pathname = "/unauthorized";
             return NextResponse.redirect(url);
-        } else {
-            console.log(`[Access Granted] Admin access. User: ${user?.email}`);
         }
+        console.log(`[Middleware] Access granted to admin area for user: ${user?.email}`);
     }
 
     // Access control for /voter
@@ -59,17 +45,13 @@ export async function middleware(request) {
         const hasVoterRole = roleList.includes("voter");
 
         if (!authenticated || !hasVoterRole) {
-            console.log(
-                `[Access Denied] Voter role required. User: ${user?.email || "Unknown"}`
-            );
+            console.log(`[Middleware] Access denied to voter area for user: ${user?.email || "Unknown"}`);
             url.pathname = "/unauthorized";
             return NextResponse.redirect(url);
-        } else {
-            console.log(`[Access Granted] Voter access. User: ${user?.email}`);
         }
+        console.log(`[Middleware] Access granted to voter area for user: ${user?.email}`);
     }
 
-    // Allow other requests
     return NextResponse.next();
 }
 
