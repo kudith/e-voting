@@ -23,8 +23,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { XCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 export default function CandidatesForm({
   isOpen,
@@ -37,8 +35,8 @@ export default function CandidatesForm({
     register,
     handleSubmit,
     setValue,
+    
     reset,
-    watch,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(candidateSchema),
@@ -99,24 +97,11 @@ export default function CandidatesForm({
                 <Label htmlFor="name">Nama *</Label>
                 <Input
                   id="name"
-                  {...register("name", {
-                    onChange: (e) => {
-                      const value = e.target.value;
-                      setValue("name", value, { shouldValidate: true });
-                    },
-                  })}
+                  {...register("name")}
                   placeholder="Masukkan nama kandidat"
-                  className={cn(
-                    "transition-colors",
-                    errors.name &&
-                      "border-destructive focus-visible:ring-destructive"
-                  )}
                 />
                 {errors.name && (
-                  <p className="text-destructive text-xs flex items-center gap-1">
-                    <XCircle className="h-3 w-3" />
-                    {errors.name.message}
-                  </p>
+                  <p className="text-red-500 text-sm">{errors.name.message}</p>
                 )}
               </div>
 
@@ -125,24 +110,11 @@ export default function CandidatesForm({
                 <Label htmlFor="photo">URL Foto *</Label>
                 <Input
                   id="photo"
-                  {...register("photo", {
-                    onChange: (e) => {
-                      const value = e.target.value;
-                      setValue("photo", value, { shouldValidate: true });
-                    },
-                  })}
+                  {...register("photo")}
                   placeholder="Masukkan URL foto kandidat"
-                  className={cn(
-                    "transition-colors",
-                    errors.photo &&
-                      "border-destructive focus-visible:ring-destructive"
-                  )}
                 />
                 {errors.photo && (
-                  <p className="text-destructive text-xs flex items-center gap-1">
-                    <XCircle className="h-3 w-3" />
-                    {errors.photo.message}
-                  </p>
+                  <p className="text-red-500 text-sm">{errors.photo.message}</p>
                 )}
               </div>
 
@@ -151,22 +123,11 @@ export default function CandidatesForm({
                 <Label htmlFor="vision">Visi *</Label>
                 <Input
                   id="vision"
-                  {...register("vision", {
-                    onChange: (e) => {
-                      const value = e.target.value;
-                      setValue("vision", value, { shouldValidate: true });
-                    },
-                  })}
+                  {...register("vision")}
                   placeholder="Masukkan visi kandidat"
-                  className={cn(
-                    "transition-colors",
-                    errors.vision &&
-                      "border-destructive focus-visible:ring-destructive"
-                  )}
                 />
                 {errors.vision && (
-                  <p className="text-destructive text-xs flex items-center gap-1">
-                    <XCircle className="h-3 w-3" />
+                  <p className="text-red-500 text-sm">
                     {errors.vision.message}
                   </p>
                 )}
@@ -177,22 +138,11 @@ export default function CandidatesForm({
                 <Label htmlFor="mission">Misi *</Label>
                 <Input
                   id="mission"
-                  {...register("mission", {
-                    onChange: (e) => {
-                      const value = e.target.value;
-                      setValue("mission", value, { shouldValidate: true });
-                    },
-                  })}
+                  {...register("mission")}
                   placeholder="Masukkan misi kandidat"
-                  className={cn(
-                    "transition-colors",
-                    errors.mission &&
-                      "border-destructive focus-visible:ring-destructive"
-                  )}
                 />
                 {errors.mission && (
-                  <p className="text-destructive text-xs flex items-center gap-1">
-                    <XCircle className="h-3 w-3" />
+                  <p className="text-red-500 text-sm">
                     {errors.mission.message}
                   </p>
                 )}
@@ -203,44 +153,25 @@ export default function CandidatesForm({
                 <Label htmlFor="shortBio">Bio Singkat *</Label>
                 <Input
                   id="shortBio"
-                  {...register("shortBio", {
-                    onChange: (e) => {
-                      const value = e.target.value;
-                      setValue("shortBio", value, { shouldValidate: true });
-                    },
-                  })}
+                  {...register("shortBio")}
                   placeholder="Masukkan bio singkat kandidat"
-                  className={cn(
-                    "transition-colors",
-                    errors.shortBio &&
-                      "border-destructive focus-visible:ring-destructive"
-                  )}
                 />
                 {errors.shortBio && (
-                  <p className="text-destructive text-xs flex items-center gap-1">
-                    <XCircle className="h-3 w-3" />
+                  <p className="text-red-500 text-sm">
                     {errors.shortBio.message}
                   </p>
                 )}
               </div>
 
               {/* Election ID Field */}
+              {/* Election ID Field */}
               <div className="grid gap-2">
                 <Label htmlFor="electionId">Pemilihan *</Label>
                 <Select
-                  value={watch("electionId")}
-                  onValueChange={(value) =>
-                    setValue("electionId", value, { shouldValidate: true })
-                  }
+                  value={watch("electionId")} // Use watch to observe the value
+                  onValueChange={(value) => setValue("electionId", value)}
                 >
-                  <SelectTrigger
-                    id="electionId"
-                    className={cn(
-                      "transition-colors",
-                      errors.electionId &&
-                        "border-destructive focus-visible:ring-destructive"
-                    )}
-                  >
+                  <SelectTrigger id="electionId" className="w-full">
                     <SelectValue placeholder="Pilih pemilihan" />
                   </SelectTrigger>
                   <SelectContent>
@@ -258,8 +189,7 @@ export default function CandidatesForm({
                   </SelectContent>
                 </Select>
                 {errors.electionId && (
-                  <p className="text-destructive text-xs flex items-center gap-1">
-                    <XCircle className="h-3 w-3" />
+                  <p className="text-red-500 text-sm">
                     {errors.electionId.message}
                   </p>
                 )}

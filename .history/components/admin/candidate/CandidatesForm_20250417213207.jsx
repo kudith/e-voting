@@ -99,12 +99,7 @@ export default function CandidatesForm({
                 <Label htmlFor="name">Nama *</Label>
                 <Input
                   id="name"
-                  {...register("name", {
-                    onChange: (e) => {
-                      const value = e.target.value;
-                      setValue("name", value, { shouldValidate: true });
-                    },
-                  })}
+                  {...register("name")}
                   placeholder="Masukkan nama kandidat"
                   className={cn(
                     "transition-colors",
@@ -125,12 +120,7 @@ export default function CandidatesForm({
                 <Label htmlFor="photo">URL Foto *</Label>
                 <Input
                   id="photo"
-                  {...register("photo", {
-                    onChange: (e) => {
-                      const value = e.target.value;
-                      setValue("photo", value, { shouldValidate: true });
-                    },
-                  })}
+                  {...register("photo")}
                   placeholder="Masukkan URL foto kandidat"
                   className={cn(
                     "transition-colors",
@@ -151,12 +141,7 @@ export default function CandidatesForm({
                 <Label htmlFor="vision">Visi *</Label>
                 <Input
                   id="vision"
-                  {...register("vision", {
-                    onChange: (e) => {
-                      const value = e.target.value;
-                      setValue("vision", value, { shouldValidate: true });
-                    },
-                  })}
+                  {...register("vision")}
                   placeholder="Masukkan visi kandidat"
                   className={cn(
                     "transition-colors",
@@ -177,12 +162,7 @@ export default function CandidatesForm({
                 <Label htmlFor="mission">Misi *</Label>
                 <Input
                   id="mission"
-                  {...register("mission", {
-                    onChange: (e) => {
-                      const value = e.target.value;
-                      setValue("mission", value, { shouldValidate: true });
-                    },
-                  })}
+                  {...register("mission")}
                   placeholder="Masukkan misi kandidat"
                   className={cn(
                     "transition-colors",
@@ -203,12 +183,7 @@ export default function CandidatesForm({
                 <Label htmlFor="shortBio">Bio Singkat *</Label>
                 <Input
                   id="shortBio"
-                  {...register("shortBio", {
-                    onChange: (e) => {
-                      const value = e.target.value;
-                      setValue("shortBio", value, { shouldValidate: true });
-                    },
-                  })}
+                  {...register("shortBio")}
                   placeholder="Masukkan bio singkat kandidat"
                   className={cn(
                     "transition-colors",
@@ -229,9 +204,7 @@ export default function CandidatesForm({
                 <Label htmlFor="electionId">Pemilihan *</Label>
                 <Select
                   value={watch("electionId")}
-                  onValueChange={(value) =>
-                    setValue("electionId", value, { shouldValidate: true })
-                  }
+                  onValueChange={(value) => setValue("electionId", value)}
                 >
                   <SelectTrigger
                     id="electionId"

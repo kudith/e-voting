@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { candidateSchema } from "@/validations/CandidateSchema";
 import { motion } from "framer-motion";
+import { useForm, watch } from "react-hook-form"; // Ensure watch is imported
+import { zodResolver } from "@hookform/resolvers/zod";
+import { candidateSchema } from "@/lib/validations/candidate";
+import { z } from "zod";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,8 +25,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { XCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
+
+// Type derived from schema
+type CandidateFormData = z.infer<typeof candidateSchema>;
 
 export default function CandidatesForm({
   isOpen,
@@ -36,11 +39,13 @@ export default function CandidatesForm({
   const {
     register,
     handleSubmit,
-    setValue,
     reset,
-    watch,
+    setValue,
+    watch, // Add watch here
     formState: { errors },
-  } = useForm({
+  } = useForm <
+  CandidateFormData >
+  {
     resolver: zodResolver(candidateSchema),
     defaultValues: {
       name: "",
@@ -49,8 +54,9 @@ export default function CandidatesForm({
       mission: "",
       shortBio: "",
       electionId: "",
+      status: "active",
     },
-  });
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -62,6 +68,7 @@ export default function CandidatesForm({
           mission: candidate.mission || "",
           shortBio: candidate.shortBio || "",
           electionId: candidate.election ? String(candidate.election.id) : "",
+          status: candidate.status || "active",
         });
       } else {
         reset();
@@ -69,8 +76,8 @@ export default function CandidatesForm({
     }
   }, [isOpen, candidate, reset]);
 
-  const onSubmit = (formData) => {
-    onSave(formData);
+  const onSubmit = (data: CandidateFormData) => {
+    onSave(data);
   };
 
   return (
@@ -92,161 +99,91 @@ export default function CandidatesForm({
                 : "Isi detail untuk menambahkan kandidat baru ke sistem."}
             </DialogDescription>
           </DialogHeader>
+
           <form onSubmit={handleSubmit(onSubmit)}>
             <div className="px-8 py-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Name Field */}
               <div className="grid gap-2">
                 <Label htmlFor="name">Nama *</Label>
                 <Input
                   id="name"
-                  {...register("name", {
-                    onChange: (e) => {
-                      const value = e.target.value;
-                      setValue("name", value, { shouldValidate: true });
-                    },
-                  })}
+                  {...register("name")}
                   placeholder="Masukkan nama kandidat"
-                  className={cn(
-                    "transition-colors",
-                    errors.name &&
-                      "border-destructive focus-visible:ring-destructive"
-                  )}
                 />
                 {errors.name && (
-                  <p className="text-destructive text-xs flex items-center gap-1">
-                    <XCircle className="h-3 w-3" />
-                    {errors.name.message}
-                  </p>
+                  <p className="text-sm text-red-500">{errors.name.message}</p>
                 )}
               </div>
 
-              {/* Photo Field */}
               <div className="grid gap-2">
                 <Label htmlFor="photo">URL Foto *</Label>
                 <Input
                   id="photo"
-                  {...register("photo", {
-                    onChange: (e) => {
-                      const value = e.target.value;
-                      setValue("photo", value, { shouldValidate: true });
-                    },
-                  })}
+                  {...register("photo")}
                   placeholder="Masukkan URL foto kandidat"
-                  className={cn(
-                    "transition-colors",
-                    errors.photo &&
-                      "border-destructive focus-visible:ring-destructive"
-                  )}
                 />
                 {errors.photo && (
-                  <p className="text-destructive text-xs flex items-center gap-1">
-                    <XCircle className="h-3 w-3" />
-                    {errors.photo.message}
-                  </p>
+                  <p className="text-sm text-red-500">{errors.photo.message}</p>
                 )}
               </div>
 
-              {/* Vision Field */}
               <div className="grid gap-2">
                 <Label htmlFor="vision">Visi *</Label>
                 <Input
                   id="vision"
-                  {...register("vision", {
-                    onChange: (e) => {
-                      const value = e.target.value;
-                      setValue("vision", value, { shouldValidate: true });
-                    },
-                  })}
+                  {...register("vision")}
                   placeholder="Masukkan visi kandidat"
-                  className={cn(
-                    "transition-colors",
-                    errors.vision &&
-                      "border-destructive focus-visible:ring-destructive"
-                  )}
                 />
                 {errors.vision && (
-                  <p className="text-destructive text-xs flex items-center gap-1">
-                    <XCircle className="h-3 w-3" />
+                  <p className="text-sm text-red-500">
                     {errors.vision.message}
                   </p>
                 )}
               </div>
 
-              {/* Mission Field */}
               <div className="grid gap-2">
                 <Label htmlFor="mission">Misi *</Label>
                 <Input
                   id="mission"
-                  {...register("mission", {
-                    onChange: (e) => {
-                      const value = e.target.value;
-                      setValue("mission", value, { shouldValidate: true });
-                    },
-                  })}
+                  {...register("mission")}
                   placeholder="Masukkan misi kandidat"
-                  className={cn(
-                    "transition-colors",
-                    errors.mission &&
-                      "border-destructive focus-visible:ring-destructive"
-                  )}
                 />
                 {errors.mission && (
-                  <p className="text-destructive text-xs flex items-center gap-1">
-                    <XCircle className="h-3 w-3" />
+                  <p className="text-sm text-red-500">
                     {errors.mission.message}
                   </p>
                 )}
               </div>
 
-              {/* Short Bio Field */}
               <div className="grid gap-2">
                 <Label htmlFor="shortBio">Bio Singkat *</Label>
                 <Input
                   id="shortBio"
-                  {...register("shortBio", {
-                    onChange: (e) => {
-                      const value = e.target.value;
-                      setValue("shortBio", value, { shouldValidate: true });
-                    },
-                  })}
+                  {...register("shortBio")}
                   placeholder="Masukkan bio singkat kandidat"
-                  className={cn(
-                    "transition-colors",
-                    errors.shortBio &&
-                      "border-destructive focus-visible:ring-destructive"
-                  )}
                 />
                 {errors.shortBio && (
-                  <p className="text-destructive text-xs flex items-center gap-1">
-                    <XCircle className="h-3 w-3" />
+                  <p className="text-sm text-red-500">
                     {errors.shortBio.message}
                   </p>
                 )}
               </div>
 
-              {/* Election ID Field */}
               <div className="grid gap-2">
                 <Label htmlFor="electionId">Pemilihan *</Label>
                 <Select
-                  value={watch("electionId")}
-                  onValueChange={(value) =>
-                    setValue("electionId", value, { shouldValidate: true })
-                  }
+                  value={watch("electionId")} // Use watch for dynamic value
+                  onValueChange={(value) => setValue("electionId", value)}
                 >
-                  <SelectTrigger
-                    id="electionId"
-                    className={cn(
-                      "transition-colors",
-                      errors.electionId &&
-                        "border-destructive focus-visible:ring-destructive"
-                    )}
-                  >
+                  <SelectTrigger id="electionId" className="w-full">
                     <SelectValue placeholder="Pilih pemilihan" />
                   </SelectTrigger>
                   <SelectContent>
                     {elections && elections.length > 0 ? (
                       elections.map((election) => (
-                        <SelectItem key={election.id} value={election.id}>
+                        <SelectItem
+                          key={election.id}
+                          value={String(election.id)}
+                        >
                           {election.title}
                         </SelectItem>
                       ))
@@ -258,15 +195,36 @@ export default function CandidatesForm({
                   </SelectContent>
                 </Select>
                 {errors.electionId && (
-                  <p className="text-destructive text-xs flex items-center gap-1">
-                    <XCircle className="h-3 w-3" />
+                  <p className="text-sm text-red-500">
                     {errors.electionId.message}
                   </p>
                 )}
               </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="status">Status *</Label>
+                <Select
+                  value={watch("status")} // Use watch for dynamic value
+                  onValueChange={(value) => setValue("status", value)}
+                >
+                  <SelectTrigger id="status" className="w-full">
+                    <SelectValue placeholder="Pilih status kandidat" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Aktif</SelectItem>
+                    <SelectItem value="inactive">Tidak Aktif</SelectItem>
+                  </SelectContent>
+                </Select>
+                {errors.status && (
+                  <p className="text-sm text-red-500">
+                    {errors.status.message}
+                  </p>
+                )}
+              </div>
             </div>
+
             <DialogFooter className="px-8 pb-8 flex justify-end gap-4">
-              <Button variant="outline" onClick={onClose}>
+              <Button type="button" variant="outline" onClick={onClose}>
                 Batal
               </Button>
               <Button type="submit">

@@ -57,7 +57,7 @@ const data = {
     },
     {
       title: "Pemilu", // Menu baru
-      url: "/admin/dashboard/elections",
+      url: "/admin/dashboardelections",
       icon: IconDatabase,
     },
     {
