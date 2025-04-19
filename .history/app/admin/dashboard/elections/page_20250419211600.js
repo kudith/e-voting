@@ -202,10 +202,10 @@ export default function ElectionsPage() {
           <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <CardTitle className="text-2xl font-bold">
-                Manajemen Pemilihan
+                Election Management
               </CardTitle>
               <CardDescription>
-                Kelola data pemilihan dalam sistem Anda
+                Manage elections for your system
               </CardDescription>
             </div>
             <div className="flex flex-col sm:flex-row gap-4 sm:items-center">
@@ -215,14 +215,8 @@ export default function ElectionsPage() {
                 statusFilter={statusFilter}
                 setStatusFilter={setStatusFilter}
               />
-              <Button
-                onClick={() => {
-                  setSelectedElection(null); // Kosongkan data pemilihan yang dipilih
-                  setIsModalOpen(true); // Buka form
-                }}
-                className="gap-1"
-              >
-                <Plus className="h-4 w-4" /> Tambah Pemilihan
+              <Button onClick={() => setIsModalOpen(true)} className="gap-1">
+                <Plus className="h-4 w-4" /> Add Election
               </Button>
             </div>
           </CardHeader>
@@ -230,14 +224,14 @@ export default function ElectionsPage() {
             {selectedElections.length > 0 && (
               <div className="mb-4 p-2 bg-red-50 rounded-md flex items-center justify-between">
                 <span className="text-sm text-red-600">
-                  {selectedElections.length} pemilihan dipilih
+                  {selectedElections.length} elections selected
                 </span>
                 <Button
                   variant="destructive"
                   size="sm"
                   onClick={() => setIsBulkDeleteDialogOpen(true)}
                 >
-                  Hapus yang Dipilih
+                  Delete Selected
                 </Button>
               </div>
             )}
@@ -257,8 +251,8 @@ export default function ElectionsPage() {
                 )
               }
               onEdit={(election) => {
-                setSelectedElection(election); // Atur data pemilihan yang dipilih
-                setIsModalOpen(true); // Buka form
+                setSelectedElection(election);
+                setIsModalOpen(true);
               }}
               onDelete={(election) => {
                 setSelectedElection(election);
@@ -278,7 +272,7 @@ export default function ElectionsPage() {
             setSelectedElection(null);
           }}
           onSave={handleSaveElection}
-          election={selectedElection} // Kirim data pemilihan yang dipilih
+          election={selectedElection}
         />
 
         <DeleteConfirmation

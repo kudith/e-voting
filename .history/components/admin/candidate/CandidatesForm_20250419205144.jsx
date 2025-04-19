@@ -231,7 +231,7 @@ export default function CandidatesForm({
                     htmlFor="electionId"
                     className="flex items-center gap-1.5"
                   >
-                    <Gavel className="h-4 w-4 text-muted-foreground" />
+                    <Target className="h-4 w-4 text-muted-foreground" />
                     Pemilihan <span className="text-destructive">*</span>
                   </Label>
                   <Select
@@ -243,7 +243,7 @@ export default function CandidatesForm({
                     <SelectTrigger
                       id="electionId"
                       className={cn(
-                        "w-full transition-colors", // Tambahkan `w-full` agar panjangnya sama
+                        "transition-colors",
                         errors.electionId &&
                           "border-destructive focus-visible:ring-destructive"
                       )}

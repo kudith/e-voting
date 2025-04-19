@@ -68,8 +68,8 @@ useEffect(() => {
       reset({
         title: election.title || "",
         description: election.description || "",
-        startDate: formatDate(election.startDate) || "", // Format tanggal mulai
-        endDate: formatDate(election.endDate) || "", // Format tanggal selesai
+        startDate: election.startDate || "", // Gunakan data tanggal mulai dari election
+        endDate: election.endDate || "", // Gunakan data tanggal selesai dari election
         status: election.status || "active", // Gunakan status dari election
       });
     } else {
@@ -215,6 +215,32 @@ useEffect(() => {
                     <p className="text-destructive text-xs flex items-center gap-1">
                       <XCircle className="h-3 w-3" />
                       {errors.endDate.message}
+                    </p>
+                  )}
+                </div>
+
+                {/* Status Field */}
+                <div className="space-y-2">
+                  <Label htmlFor="status" className="flex items-center gap-1.5">
+                    <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+                    Status <span className="text-destructive">*</span>
+                  </Label>
+                  <select
+                    id="status"
+                    {...register("status")}
+                    className={cn(
+                      "w-full transition-colors border rounded-md p-2", // Tambahkan `w-full` agar panjangnya sama
+                      errors.status &&
+                        "border-destructive focus-visible:ring-destructive"
+                    )}
+                  >
+                    <option value="active">Aktif</option>
+                    <option value="inactive">Tidak Aktif</option>
+                  </select>
+                  {errors.status && (
+                    <p className="text-destructive text-xs flex items-center gap-1">
+                      <XCircle className="h-3 w-3" />
+                      {errors.status.message}
                     </p>
                   )}
                 </div>

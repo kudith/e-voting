@@ -152,7 +152,7 @@ export default function ElectionTable({
                   colSpan={7}
                   className="text-center py-10 text-muted-foreground"
                 >
-                  Tidak ada pemilu yang ditemukan.
+                  Tidak 
                 </TableCell>
               </TableRow>
             ) : (
@@ -207,7 +207,7 @@ export default function ElectionTable({
                         onClick={() => onDelete(election)}
                       >
                         <Trash2 className="h-4 w-4 text-red-500" />
-                        <span className="sr-only">Hapus</span>
+                        <span className="sr-only">Delete</span>
                       </Button>
                     </div>
                   </TableCell>

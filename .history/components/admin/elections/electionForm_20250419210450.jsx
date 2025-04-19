@@ -25,14 +25,14 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Fungsi untuk memformat tanggal ke format yyyy-mm-dd
+// Fungsi untuk memformat tanggal menjadi dd-mm-yyyy
 const formatDate = (dateString) => {
   if (!dateString) return "";
   const date = new Date(dateString);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  return `${day}-${month}-${year}`;
 };
 
 export default function ElectionForm({ isOpen, onClose, onSave, election }) {
@@ -52,38 +52,23 @@ export default function ElectionForm({ isOpen, onClose, onSave, election }) {
       status: "active",
     },
   });
-const handleSaveElection = (formData) => {
-  if (selectedElection) {
-    // Edit pemilihan yang ada
-    updateElection({ id: selectedElection.id, ...formData });
-  } else {
-    // Buat pemilihan baru
-    createElection(formData);
-  }
-};
-useEffect(() => {
-  if (isOpen) {
-    if (election) {
-      // Isi form dengan data pemilihan yang dipilih untuk diedit
-      reset({
-        title: election.title || "",
-        description: election.description || "",
-        startDate: formatDate(election.startDate) || "", // Format tanggal mulai
-        endDate: formatDate(election.endDate) || "", // Format tanggal selesai
-        status: election.status || "active", // Gunakan status dari election
-      });
-    } else {
-      // Kosongkan form untuk membuat pemilihan baru
-      reset({
-        title: "",
-        description: "",
-        startDate: "",
-        endDate: "",
-        status: "active",
-      });
+
+  useEffect(() => {
+    if (isOpen) {
+      if (election) {
+        reset({
+          title: election.title || "",
+          description: election.description || "",
+          startDate: formatDate(election.startDate) || "",
+          endDate: formatDate(election.endDate) || "",
+          status: election.status || "active",
+        });
+      } else {
+        reset();
+      }
     }
-  }
-}, [isOpen, election, reset]);
+  }, [isOpen, election, reset]);
+
   const onSubmit = (formData) => {
     onSave(formData);
   };
@@ -176,8 +161,9 @@ useEffect(() => {
                   </Label>
                   <Input
                     id="startDate"
-                    type="date"
+                    type="text"
                     {...register("startDate")}
+                    placeholder="dd-mm-yyyy"
                     className={cn(
                       "transition-colors",
                       errors.startDate &&
@@ -203,8 +189,9 @@ useEffect(() => {
                   </Label>
                   <Input
                     id="endDate"
-                    type="date"
+                    type="text"
                     {...register("endDate")}
+                    placeholder="dd-mm-yyyy"
                     className={cn(
                       "transition-colors",
                       errors.endDate &&
@@ -215,6 +202,32 @@ useEffect(() => {
                     <p className="text-destructive text-xs flex items-center gap-1">
                       <XCircle className="h-3 w-3" />
                       {errors.endDate.message}
+                    </p>
+                  )}
+                </div>
+
+                {/* Status Field */}
+                <div className="space-y-2">
+                  <Label htmlFor="status" className="flex items-center gap-1.5">
+                    <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+                    Status <span className="text-destructive">*</span>
+                  </Label>
+                  <select
+                    id="status"
+                    {...register("status")}
+                    className={cn(
+                      "w-full transition-colors border rounded-md p-2",
+                      errors.status &&
+                        "border-destructive focus-visible:ring-destructive"
+                    )}
+                  >
+                    <option value="active">Aktif</option>
+                    <option value="inactive">Tidak Aktif</option>
+                  </select>
+                  {errors.status && (
+                    <p className="text-destructive text-xs flex items-center gap-1">
+                      <XCircle className="h-3 w-3" />
+                      {errors.status.message}
                     </p>
                   )}
                 </div>

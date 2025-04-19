@@ -90,7 +90,7 @@ export default function ElectionTable({
                 className="cursor-pointer"
               >
                 <div className="flex items-center">
-                  Judul {getSortIcon("title")}
+                  Title {getSortIcon("title")}
                 </div>
               </TableHead>
               <TableHead
@@ -98,7 +98,7 @@ export default function ElectionTable({
                 className="cursor-pointer"
               >
                 <div className="flex items-center">
-                  Deskripsi {getSortIcon("description")}
+                  Description {getSortIcon("description")}
                 </div>
               </TableHead>
               <TableHead
@@ -106,7 +106,7 @@ export default function ElectionTable({
                 className="cursor-pointer"
               >
                 <div className="flex items-center">
-                  Tanggal Mulai {getSortIcon("startDate")}
+                  Start Date {getSortIcon("startDate")}
                 </div>
               </TableHead>
               <TableHead
@@ -114,7 +114,7 @@ export default function ElectionTable({
                 className="cursor-pointer"
               >
                 <div className="flex items-center">
-                  Tanggal Selesai {getSortIcon("endDate")}
+                  End Date {getSortIcon("endDate")}
                 </div>
               </TableHead>
               <TableHead
@@ -125,7 +125,7 @@ export default function ElectionTable({
                   Status {getSortIcon("status")}
                 </div>
               </TableHead>
-              <TableHead className="text-right">Aksi</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -152,7 +152,7 @@ export default function ElectionTable({
                   colSpan={7}
                   className="text-center py-10 text-muted-foreground"
                 >
-                  Tidak ada pemilu yang ditemukan.
+                  No elections found
                 </TableCell>
               </TableRow>
             ) : (
@@ -207,7 +207,7 @@ export default function ElectionTable({
                         onClick={() => onDelete(election)}
                       >
                         <Trash2 className="h-4 w-4 text-red-500" />
-                        <span className="sr-only">Hapus</span>
+                        <span className="sr-only">Delete</span>
                       </Button>
                     </div>
                   </TableCell>

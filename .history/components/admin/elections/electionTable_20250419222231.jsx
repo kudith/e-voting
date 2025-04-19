@@ -152,7 +152,7 @@ export default function ElectionTable({
                   colSpan={7}
                   className="text-center py-10 text-muted-foreground"
                 >
-                  Tidak ada pemilu yang ditemukan.
+                  Tidak ada pemilihan ditemukan
                 </TableCell>
               </TableRow>
             ) : (
@@ -188,7 +188,7 @@ export default function ElectionTable({
                           : "bg-muted text-muted-foreground"
                       }`}
                     >
-                      {election.status}
+                      {election.status === "active" ? "Aktif" : "Tidak Aktif"}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">

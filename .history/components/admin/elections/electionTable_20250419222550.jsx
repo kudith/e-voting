@@ -207,7 +207,7 @@ export default function ElectionTable({
                         onClick={() => onDelete(election)}
                       >
                         <Trash2 className="h-4 w-4 text-red-500" />
-                        <span className="sr-only">Hapus</span>
+                        <span className="sr-only">De/span>
                       </Button>
                     </div>
                   </TableCell>

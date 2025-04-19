@@ -60,7 +60,7 @@ export default function SearchAndFilter({
             </SelectContent>
           </Select>
 
-          {/* Filter Lanjutan */}
+          </* Filter Lanjutan */}
                 <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="gap-2">

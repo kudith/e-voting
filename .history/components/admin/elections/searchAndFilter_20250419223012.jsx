@@ -40,7 +40,7 @@ export default function SearchAndFilter({
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Cari Pemilu..."
+            placeholder="Search elections..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
@@ -56,34 +56,34 @@ export default function SearchAndFilter({
             <SelectContent>
               <SelectItem value="all">Semua Status</SelectItem>
               <SelectItem value="active">Aktif</SelectItem>
-              <SelectItem value="inactive">Nonaktif</SelectItem>
+              <SelectItem value="inactive">Nonak</SelectItem>
             </SelectContent>
           </Select>
 
-          {/* Filter Lanjutan */}
-                <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="gap-2">
-                  <Filter className="h-4 w-4" />
-                  Filter
-                  {activeFilters.length > 0 && (
-                    <Badge variant="secondary" className="ml-1">
+          {/* Advanced Filters */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <Filter className="h-4 w-4" />
+                Filter
+                {activeFilters.length > 0 && (
+                  <Badge variant="secondary" className="ml-1">
                     {activeFilters.length}
-                    </Badge>
-                  )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-80">
-                  <div className="space-y-4">
-                  <div className="space-y-2">
-                    <h4 className="font-medium leading-none">Filter Lanjutan</h4>
-                    <p className="text-sm text-muted-foreground">
-                    Gunakan filter tambahan untuk mempersempit hasil.
-                    </p>
-                  </div>
+                  </Badge>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <h4 className="font-medium leading-none">Advanced Filters</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Use additional filters to narrow down the results.
+                  </p>
+                </div>
 
-                  <div className="space-y-4">
-                    {/* Filter Tanggal Mulai */}
+                <div className="space-y-4">
+                  {/* Start Date Filter */}
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Start Date</label>
                     <Input

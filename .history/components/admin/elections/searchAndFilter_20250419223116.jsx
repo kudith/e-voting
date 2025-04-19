@@ -60,30 +60,30 @@ export default function SearchAndFilter({
             </SelectContent>
           </Select>
 
-          {/* Filter Lanjutan */}
-                <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="gap-2">
-                  <Filter className="h-4 w-4" />
-                  Filter
-                  {activeFilters.length > 0 && (
-                    <Badge variant="secondary" className="ml-1">
+          {/* Advanced Filters */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <Filter className="h-4 w-4" />
+                Filter
+                {activeFilters.length > 0 && (
+                  <Badge variant="secondary" className="ml-1">
                     {activeFilters.length}
-                    </Badge>
-                  )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-80">
-                  <div className="space-y-4">
-                  <div className="space-y-2">
-                    <h4 className="font-medium leading-none">Filter Lanjutan</h4>
-                    <p className="text-sm text-muted-foreground">
-                    Gunakan filter tambahan untuk mempersempit hasil.
-                    </p>
-                  </div>
+                  </Badge>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <h4 className="font-medium leading-none">Advanced Filters</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Use additional filters to narrow down the results.
+                  </p>
+                </div>
 
-                  <div className="space-y-4">
-                    {/* Filter Tanggal Mulai */}
+                <div className="space-y-4">
+                  {/* Start Date Filter */}
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Start Date</label>
                     <Input

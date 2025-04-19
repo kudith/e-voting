@@ -25,16 +25,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Fungsi untuk memformat tanggal ke format yyyy-mm-dd
-const formatDate = (dateString) => {
-  if (!dateString) return "";
-  const date = new Date(dateString);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-};
-
 export default function ElectionForm({ isOpen, onClose, onSave, election }) {
   const {
     register,
@@ -52,42 +42,32 @@ export default function ElectionForm({ isOpen, onClose, onSave, election }) {
       status: "active",
     },
   });
-const handleSaveElection = (formData) => {
-  if (selectedElection) {
-    // Edit pemilihan yang ada
-    updateElection({ id: selectedElection.id, ...formData });
-  } else {
-    // Buat pemilihan baru
-    createElection(formData);
-  }
-};
-useEffect(() => {
-  if (isOpen) {
-    if (election) {
-      // Isi form dengan data pemilihan yang dipilih untuk diedit
-      reset({
-        title: election.title || "",
-        description: election.description || "",
-        startDate: formatDate(election.startDate) || "", // Format tanggal mulai
-        endDate: formatDate(election.endDate) || "", // Format tanggal selesai
-        status: election.status || "active", // Gunakan status dari election
-      });
-    } else {
-      // Kosongkan form untuk membuat pemilihan baru
-      reset({
-        title: "",
-        description: "",
-        startDate: "",
-        endDate: "",
-        status: "active",
-      });
-    }
-  }
-}, [isOpen, election, reset]);
-  const onSubmit = (formData) => {
-    onSave(formData);
-  };
 
+  useEffect(() => {
+    if (isOpen) {
+      if (election) {
+        reset({
+          title: election.title || "",
+          description: election.description || "",
+          startDate: election.startDate || "",
+          endDate: election.endDate || "",
+          status: election.status || "active",
+        });
+      } else {
+        reset();
+      }
+    }
+  }, [isOpen, election, reset]);
+
+  const onSubmit = (formData) => {
+    // Konversi tanggal kembali ke format yyyy-mm-dd sebelum disimpan
+    const formattedData = {
+      ...formData,
+      startDate: parseDate(formData.startDate),
+      endDate: parseDate(formData.endDate),
+    };
+    onSave(formattedData);
+  };
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[700px] p-0 overflow-hidden border-0 shadow-lg">
@@ -165,7 +145,7 @@ useEffect(() => {
                   )}
                 </div>
 
-                {/* Start Date Field */}
+   {/* Start Date Field */}
                 <div className="space-y-2">
                   <Label
                     htmlFor="startDate"
@@ -177,7 +157,12 @@ useEffect(() => {
                   <Input
                     id="startDate"
                     type="date"
-                    {...register("startDate")}
+                    value={parseDate(watch("startDate"))}
+                    onChange={(e) =>
+                      setValue("startDate", formatDate(e.target.value), {
+                        shouldValidate: true,
+                      })
+                    }
                     className={cn(
                       "transition-colors",
                       errors.startDate &&
@@ -204,7 +189,12 @@ useEffect(() => {
                   <Input
                     id="endDate"
                     type="date"
-                    {...register("endDate")}
+                    value={parseDate(watch("endDate"))}
+                    onChange={(e) =>
+                      setValue("endDate", formatDate(e.target.value), {
+                        shouldValidate: true,
+                      })
+                    }
                     className={cn(
                       "transition-colors",
                       errors.endDate &&
@@ -215,6 +205,31 @@ useEffect(() => {
                     <p className="text-destructive text-xs flex items-center gap-1">
                       <XCircle className="h-3 w-3" />
                       {errors.endDate.message}
+                    </p>
+                  )}
+                </div>
+                {/* Status Field */}
+                <div className="space-y-2">
+                  <Label htmlFor="status" className="flex items-center gap-1.5">
+                    <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+                    Status <span className="text-destructive">*</span>
+                  </Label>
+                  <select
+                    id="status"
+                    {...register("status")}
+                    className={cn(
+                      "w-full transition-colors border rounded-md p-2", // Tambahkan `w-full` agar panjangnya sama
+                      errors.status &&
+                        "border-destructive focus-visible:ring-destructive"
+                    )}
+                  >
+                    <option value="active">Aktif</option>
+                    <option value="inactive">Tidak Aktif</option>
+                  </select>
+                  {errors.status && (
+                    <p className="text-destructive text-xs flex items-center gap-1">
+                      <XCircle className="h-3 w-3" />
+                      {errors.status.message}
                     </p>
                   )}
                 </div>
