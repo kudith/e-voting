@@ -7,7 +7,7 @@ import { ArrowRight } from "lucide-react"
 import BackgroundAnimation from "./background-animation"
 import StatsCounter from "./stats-counter"
 import VotingInterface from "./voting-interface"
-
+import { Badge } from "@/components/ui/badge"
 export default function HeroSection() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
   const heroRef = useRef(null)
@@ -41,10 +41,10 @@ export default function HeroSection() {
   }, [statsControls])
 
   return (
-    <section ref={heroRef} className="relative min-h-screen flex items-center justify-center pt-24 overflow-hidden">
+    <section ref={heroRef} className="relative min-h-screen flex items-center justify-center pt-28 overflow-hidden">
       <BackgroundAnimation />
 
-      <div className="container mx-auto px-4 grid md:grid-cols-2 gap-12 items-center relative z-10">
+      <div className="container mx-auto grid md:grid-cols-2 gap-12 items-center relative z-10">
         {/* Text Content */}
         <div className="max-w-xl">
           <motion.div

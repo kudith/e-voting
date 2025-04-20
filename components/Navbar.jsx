@@ -17,7 +17,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
+import { ModeToggle } from "./mode-toggle";
 
 export default function Navbar({
   scrolled,
@@ -77,10 +79,10 @@ export default function Navbar({
       }}
     >
       <div
-        className={`mx-4 my-4 px-6 py-4 rounded-2xl transition-all duration-300 ${
+        className={`mx-4 my-4 px-6 py-4 rounded-full transition-all duration-300 ${
           scrolled
-            ? "bg-gradient-to-r from-white/90 to-white/80 dark:from-slate-900/90 dark:to-slate-900/80 shadow-[0_8px_32px_0_rgba(31,38,135,0.15)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] border border-white/30 dark:border-slate-700/30"
-            : "bg-gradient-to-r from-white/80 to-white/70 dark:from-slate-900/80 dark:to-slate-900/70 border border-white/20 dark:border-slate-700/20"
+            ? "bg-gradient-to-r from-white/90 to-white/80 dark:from-zinc-950 dark:to-zinc-900/80 shadow-[0_8px_32px_0_rgba(31,38,135,0.15)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] border border-white/30 dark:border-accent-foreground/30"
+            : ""
         }`}
       >
         <div className="container mx-auto flex items-center justify-between">
@@ -92,18 +94,8 @@ export default function Navbar({
             transition={{ duration: 0.5 }}
             onClick={handleLogoClick}
           >
-            <motion.div
-              className="relative"
-              animate={{
-                rotate: scrolled ? [0, 10, 0] : 0,
-                scale: scrolled ? [1, 1.1, 1] : 1,
-              }}
-              transition={{ duration: 0.5 }}
-            >
-              <Vote className="h-7 w-7 text-primary" />
-            </motion.div>
             <motion.span 
-              className="relative bg-clip-text text-transparent bg-gradient-to-r from-primary via-primary/80 to-primary/60 dark:from-primary dark:via-blue-400 dark:to-blue-300"
+              className="text-3xl relative bg-clip-text text-transparent bg-gradient-to-r from-primary via-primary/80 to-primary/60 dark:from-primary dark:via-blue-400 dark:to-blue-300"
               animate={{
                 backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
               }}
@@ -118,6 +110,12 @@ export default function Navbar({
             >
               SiPilih
             </motion.span>
+            <Badge
+              variant="outline"
+              className="px-2 text-xs cursor-auto bg-primary/10 border-accent-foreground/50"
+            >
+              BETA
+            </Badge>
           </motion.div>
 
           {/* Desktop Navigation */}
@@ -134,20 +132,21 @@ export default function Navbar({
               />
             )}
 
-            <motion.div
+            {/* <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.5 }}
               className="flex items-center gap-2 ml-2"
             >
-              <Sun className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+              <Sun className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
               <Switch
                 checked={darkMode}
                 onCheckedChange={setDarkMode}
                 className="data-[state=checked]:bg-primary"
               />
-              <Moon className="h-4 w-4 text-slate-600 dark:text-slate-400" />
-            </motion.div>
+              <Moon className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
+            </motion.div> */}
+            <ModeToggle/>
 
             {isAuthenticated ? (
               <motion.div
@@ -159,7 +158,7 @@ export default function Navbar({
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
-                      className="relative h-10 w-10 rounded-full group"
+                      className="relative h-10 w-10 rounded-full group cursor-pointer"
                     >
                       <motion.div
                         className="absolute inset-0 bg-primary/10 rounded-full scale-0 group-hover:scale-100 transition-transform duration-300"
@@ -173,7 +172,7 @@ export default function Navbar({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent 
-                    className="w-56 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-white/30 dark:border-slate-700/30" 
+                    className="w-56 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md border border-white/30 dark:border-zinc-700/30" 
                     align="end" 
                     forceMount
                     sideOffset={8}
@@ -188,16 +187,16 @@ export default function Navbar({
                         </p>
                       </div>
                     </DropdownMenuLabel>
-                    <DropdownMenuSeparator className="bg-white/30 dark:bg-slate-700/30" />
+                    <DropdownMenuSeparator className="bg-white/30 dark:bg-zinc-700/30" />
                     <DropdownMenuGroup>
-                      <DropdownMenuItem className="cursor-pointer hover:bg-white/30 dark:hover:bg-slate-800/30">
+                      <DropdownMenuItem className="cursor-pointer hover:bg-white/30 dark:hover:bg-zinc-800/30">
                         <User className="mr-2 h-4 w-4" />
                         <span>Profile</span>
                       </DropdownMenuItem>
                     </DropdownMenuGroup>
-                    <DropdownMenuSeparator className="bg-white/30 dark:bg-slate-700/30" />
+                    <DropdownMenuSeparator className="bg-white/30 dark:bg-zinc-700/30" />
                     <LogoutLink>
-                      <DropdownMenuItem className="cursor-pointer hover:bg-white/30 dark:hover:bg-slate-800/30">
+                      <DropdownMenuItem className="cursor-pointer hover:bg-white/30 dark:hover:bg-zinc-800/30">
                         <LogOut className="mr-2 h-4 w-4" />
                         <span>Log out</span>
                       </DropdownMenuItem>
@@ -238,9 +237,9 @@ export default function Navbar({
             transition={{ duration: 0.5 }}
           >
             <div className="space-y-1.5">
-              <span className="block h-0.5 w-6 bg-slate-800 dark:bg-white"></span>
-              <span className="block h-0.5 w-6 bg-slate-800 dark:bg-white"></span>
-              <span className="block h-0.5 w-6 bg-slate-800 dark:bg-white"></span>
+              <span className="block h-0.5 w-6 bg-zinc-800 dark:bg-white"></span>
+              <span className="block h-0.5 w-6 bg-zinc-800 dark:bg-white"></span>
+              <span className="block h-0.5 w-6 bg-zinc-800 dark:bg-white"></span>
             </div>
           </motion.button>
         </div>

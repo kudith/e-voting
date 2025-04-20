@@ -10,7 +10,16 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Users2, Loader2, Users, CheckCircle2, XCircle, Trash2, Vote } from "lucide-react";
+import {
+  Plus,
+  Users2,
+  Loader2,
+  Users,
+  CheckCircle2,
+  XCircle,
+  Trash2,
+  Vote,
+} from "lucide-react";
 import { motion } from "framer-motion";
 import {
   Pagination,
@@ -121,7 +130,9 @@ export default function VotingRightsPage() {
     const fetchMajors = async () => {
       if (facultyFilter && facultyFilter !== "all") {
         try {
-          const res = await fetch(`/api/major/getMajorsByFaculty?facultyId=${facultyFilter}`);
+          const res = await fetch(
+            `/api/major/getMajorsByFaculty?facultyId=${facultyFilter}`
+          );
           if (!res.ok) throw new Error("Failed to fetch majors");
           const data = await res.json();
           setMajors(data);
@@ -142,20 +153,30 @@ export default function VotingRightsPage() {
     return voterElections.filter((ve) => {
       // Search filter
       const matchesSearch = searchQuery
-        ? `${ve.voter?.name || ""} ${ve.voter?.email || ""} ${ve.voter?.voterCode || ""} ${ve.election?.title || ""}`
+        ? `${ve.voter?.name || ""} ${ve.voter?.email || ""} ${
+            ve.voter?.voterCode || ""
+          } ${ve.election?.title || ""}`
             .toLowerCase()
             .includes(searchQuery.toLowerCase())
         : true;
 
       // Status filter
-      const matchesStatus = statusFilter === "all" ? true :
-        statusFilter === "eligible" ? ve.isEligible :
-        statusFilter === "ineligible" ? !ve.isEligible :
-        statusFilter === "voted" ? ve.hasVoted :
-        statusFilter === "not_voted" ? !ve.hasVoted : true;
+      const matchesStatus =
+        statusFilter === "all"
+          ? true
+          : statusFilter === "eligible"
+          ? ve.isEligible
+          : statusFilter === "ineligible"
+          ? !ve.isEligible
+          : statusFilter === "voted"
+          ? ve.hasVoted
+          : statusFilter === "not_voted"
+          ? !ve.hasVoted
+          : true;
 
       // Election filter
-      const matchesElection = electionFilter === "all" ? true : ve.election?.id === electionFilter;
+      const matchesElection =
+        electionFilter === "all" ? true : ve.election?.id === electionFilter;
 
       // Faculty filter - skip if no faculty data available
       const matchesFaculty = facultyFilter === "all" ? true : true; // We don't have faculty data in the API response
@@ -166,9 +187,24 @@ export default function VotingRightsPage() {
       // Year filter - skip if no year data available
       const matchesYear = yearFilter === "all" ? true : true; // We don't have year data in the API response
 
-      return matchesSearch && matchesStatus && matchesElection && matchesFaculty && matchesMajor && matchesYear;
+      return (
+        matchesSearch &&
+        matchesStatus &&
+        matchesElection &&
+        matchesFaculty &&
+        matchesMajor &&
+        matchesYear
+      );
     });
-  }, [voterElections, searchQuery, statusFilter, electionFilter, facultyFilter, majorFilter, yearFilter]);
+  }, [
+    voterElections,
+    searchQuery,
+    statusFilter,
+    electionFilter,
+    facultyFilter,
+    majorFilter,
+    yearFilter,
+  ]);
 
   // Fetch voter elections data from API
   useEffect(() => {
@@ -210,7 +246,10 @@ export default function VotingRightsPage() {
 
   // Handle page change
   const handlePageChange = (page) => {
-    if (page >= 1 && page <= Math.ceil(filteredVoterElections.length / rowsPerPage)) {
+    if (
+      page >= 1 &&
+      page <= Math.ceil(filteredVoterElections.length / rowsPerPage)
+    ) {
       setCurrentPage(page);
     }
   };
@@ -225,68 +264,75 @@ export default function VotingRightsPage() {
   const handleDeleteVoterElections = async () => {
     try {
       setIsDeleting(true);
-      
+
       // If deleting a single voter election
       if (selectedVoterElection) {
         setDeletingId(selectedVoterElection.id);
-        
-        const response = await fetch(`/api/voterElection/deleteVoterElection?id=${selectedVoterElection.id}`, {
-          method: 'DELETE',
-        });
+
+        const response = await fetch(
+          `/api/voterElection/deleteVoterElection?id=${selectedVoterElection.id}`,
+          {
+            method: "DELETE",
+          }
+        );
 
         if (!response.ok) {
-          throw new Error('Failed to delete voting right');
+          throw new Error("Failed to delete voting right");
         }
 
         const result = await response.json();
-        
+
         // Reset state
         setIsDeleteDialogOpen(false);
         setSelectedVoterElection(null);
         setSelectedVoterElections([]);
-        
+
         // Refresh data
-        setDataChanged(prev => !prev);
-        
+        setDataChanged((prev) => !prev);
+
         // Show success toast
         toast.success("Berhasil", {
           description: `Hak pilih untuk ${result.voterName} telah dihapus.`,
         });
-      } 
+      }
       // If deleting multiple voter elections
       else if (selectedVoterElections.length > 0) {
-        const response = await fetch('/api/voterElection/deleteVoterElections', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ ids: selectedVoterElections }),
-        });
+        const response = await fetch(
+          "/api/voterElection/deleteVoterElections",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ ids: selectedVoterElections }),
+          }
+        );
 
         if (!response.ok) {
           const error = await response.json();
-          throw new Error(error.message || 'Failed to delete voting rights');
+          throw new Error(error.message || "Failed to delete voting rights");
         }
 
         const result = await response.json();
-        
+
         // Reset state
         setIsDeleteDialogOpen(false);
         setSelectedVoterElection(null);
         setSelectedVoterElections([]);
-        
+
         // Refresh data
-        setDataChanged(prev => !prev);
-        
+        setDataChanged((prev) => !prev);
+
         // Show success toast
         toast.success("Berhasil", {
           description: `${result.deletedCount} hak pilih telah dihapus.`,
         });
       }
     } catch (error) {
-      console.error('Error deleting voting right(s):', error);
+      console.error("Error deleting voting right(s):", error);
       toast.error("Gagal", {
-        description: error.message || "Gagal menghapus hak pilih. Silakan coba lagi.",
+        description:
+          error.message || "Gagal menghapus hak pilih. Silakan coba lagi.",
       });
     } finally {
       setIsDeleting(false);
@@ -297,16 +343,28 @@ export default function VotingRightsPage() {
   // Calculate statistics
   const totalVoterElections = voterElections.length;
   const filteredVoterElectionsLength = filteredVoterElections.length;
-  const eligibleVoters = voterElections.filter(ve => ve.isEligible).length;
+  const eligibleVoters = voterElections.filter((ve) => ve.isEligible).length;
   const ineligibleVoters = totalVoterElections - eligibleVoters;
-  const votedVoters = voterElections.filter(ve => ve.hasVoted).length;
+  const votedVoters = voterElections.filter((ve) => ve.hasVoted).length;
   const notVotedVoters = totalVoterElections - votedVoters;
-  
+
   // Calculate percentages
-  const eligiblePercentage = totalVoterElections > 0 ? Math.round((eligibleVoters / totalVoterElections) * 100) : 0;
-  const votedPercentage = totalVoterElections > 0 ? Math.round((votedVoters / totalVoterElections) * 100) : 0;
-  const ineligiblePercentage = totalVoterElections > 0 ? Math.round((ineligibleVoters / totalVoterElections) * 100) : 0;
-  const notVotedPercentage = totalVoterElections > 0 ? Math.round((notVotedVoters / totalVoterElections) * 100) : 0;
+  const eligiblePercentage =
+    totalVoterElections > 0
+      ? Math.round((eligibleVoters / totalVoterElections) * 100)
+      : 0;
+  const votedPercentage =
+    totalVoterElections > 0
+      ? Math.round((votedVoters / totalVoterElections) * 100)
+      : 0;
+  const ineligiblePercentage =
+    totalVoterElections > 0
+      ? Math.round((ineligibleVoters / totalVoterElections) * 100)
+      : 0;
+  const notVotedPercentage =
+    totalVoterElections > 0
+      ? Math.round((notVotedVoters / totalVoterElections) * 100)
+      : 0;
 
   return (
     <div className="flex flex-1 flex-col">
@@ -318,7 +376,7 @@ export default function VotingRightsPage() {
             transition={{ duration: 0.5 }}
             className="space-y-6 px-4 sm:px-6 md:px-8"
           >
-            <VotingRightsStats 
+            <VotingRightsStats
               voterElections={voterElections}
               totalVoterElections={totalVoterElections}
               filteredVoterElections={filteredVoterElectionsLength}
@@ -364,9 +422,9 @@ export default function VotingRightsPage() {
                     activeFilters={activeFilters}
                     clearFilters={clearFilters}
                   />
-                  <Button 
-                    onClick={() => setIsModalOpen(true)} 
-                    className="gap-1 bg-primary hover:bg-primary/90 transition-colors"
+                  <Button
+                    onClick={() => setIsModalOpen(true)}
+                    className="gap-1 bg-primary hover:bg-primary/90 transition-colors cursor-pointer"
                     disabled={isDeleting}
                   >
                     <Plus className="h-4 w-4" />
@@ -376,13 +434,16 @@ export default function VotingRightsPage() {
               </CardHeader>
               <CardContent>
                 {selectedVoterElections.length > 0 && (
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="mb-4 flex items-center justify-between bg-primary/5 p-3 rounded-md border border-primary/10"
                   >
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+                      <Badge
+                        variant="outline"
+                        className="bg-primary/10 text-primary border-primary/20"
+                      >
                         {selectedVoterElections.length} hak pilih dipilih
                       </Badge>
                     </div>
@@ -406,12 +467,12 @@ export default function VotingRightsPage() {
                   onSelectVoterElection={(id, checked) => {
                     if (checked) {
                       // Add the ID if it's not already in the array
-                      setSelectedVoterElections((prev) => 
+                      setSelectedVoterElections((prev) =>
                         prev.includes(id) ? prev : [...prev, id]
                       );
                     } else {
                       // Remove the ID if it's in the array
-                      setSelectedVoterElections((prev) => 
+                      setSelectedVoterElections((prev) =>
                         prev.filter((v) => v !== id)
                       );
                     }
@@ -435,13 +496,18 @@ export default function VotingRightsPage() {
                   isDeleting={isDeleting}
                   deletingId={deletingId}
                 />
-                
+
                 {/* Pagination and Rows Per Page */}
                 <div className="flex flex-col sm:flex-row items-center justify-between mt-6 gap-4">
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2 bg-muted/30 px-3 py-1.5 rounded-md">
-                      <span className="text-sm font-medium text-muted-foreground">Tampilkan</span>
-                      <Select defaultValue="10" onValueChange={handleRowsPerPageChange}>
+                      <span className="text-sm font-medium text-muted-foreground">
+                        Tampilkan
+                      </span>
+                      <Select
+                        defaultValue="10"
+                        onValueChange={handleRowsPerPageChange}
+                      >
                         <SelectTrigger className="w-[px] h-7 text-sm border-1 bg-transparent p-2 focus:ring-0">
                           <SelectValue placeholder="10" />
                         </SelectTrigger>
@@ -455,15 +521,23 @@ export default function VotingRightsPage() {
                         </SelectContent>
                       </Select>
                     </div>
-                    
+
                     <div className="flex items-center gap-1.5 bg-primary/5 px-3 py-1.5 rounded-md border border-primary/10">
-                      <span className="text-sm font-medium text-primary">{filteredVoterElectionsLength}</span>
-                      <span className="text-sm text-muted-foreground">dari</span>
-                      <span className="text-sm font-medium">{totalVoterElections}</span>
-                      <span className="text-sm text-muted-foreground whitespace-nowrap">hak pilih</span>
+                      <span className="text-sm font-medium text-primary">
+                        {filteredVoterElectionsLength}
+                      </span>
+                      <span className="text-sm text-muted-foreground">
+                        dari
+                      </span>
+                      <span className="text-sm font-medium">
+                        {totalVoterElections}
+                      </span>
+                      <span className="text-sm text-muted-foreground whitespace-nowrap">
+                        hak pilih
+                      </span>
                     </div>
                   </div>
-                  
+
                   <Pagination className="flex items-center justify-end">
                     <PaginationContent>
                       <PaginationItem>
@@ -477,23 +551,24 @@ export default function VotingRightsPage() {
                       {Array.from(
                         {
                           length: Math.min(
-                            Math.ceil(filteredVoterElectionsLength / rowsPerPage),
+                            Math.ceil(
+                              filteredVoterElectionsLength / rowsPerPage
+                            ),
                             5
                           ),
                         },
                         (_, index) => {
                           const page = index + 1;
                           const isCurrentPage = currentPage === page;
-                          
+
                           return (
                             <PaginationItem key={index}>
                               <PaginationLink
-                                href="#"
                                 isActive={isCurrentPage}
                                 onClick={() => handlePageChange(page)}
                                 className={cn(
                                   "h-8 w-8 p-0",
-                                  isCurrentPage && "bg-primary text-primary-foreground"
+                                  isCurrentPage && "bg-primary"
                                 )}
                               >
                                 {page}
@@ -508,7 +583,9 @@ export default function VotingRightsPage() {
                           onClick={() => handlePageChange(currentPage + 1)}
                           disabled={
                             currentPage ===
-                            Math.ceil(filteredVoterElectionsLength / rowsPerPage)
+                            Math.ceil(
+                              filteredVoterElectionsLength / rowsPerPage
+                            )
                           }
                           className="h-8 w-8 p-0"
                         />
@@ -560,14 +637,14 @@ export default function VotingRightsPage() {
       />
 
       {/* Global loading modal for bulk operations */}
-      <LoadingModal 
-        isOpen={isDeleting && !selectedVoterElection} 
-        message={selectedVoterElections.length > 0 
-          ? `Menghapus ${selectedVoterElections.length} hak pilih...` 
-          : "Memproses permintaan..."} 
+      <LoadingModal
+        isOpen={isDeleting && !selectedVoterElection}
+        message={
+          selectedVoterElections.length > 0
+            ? `Menghapus ${selectedVoterElections.length} hak pilih...`
+            : "Memproses permintaan..."
+        }
       />
     </div>
   );
 }
-
-

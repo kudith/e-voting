@@ -56,40 +56,119 @@ model Voter {
   createdAt    DateTime    @default(now()) // Waktu pembuatan
   updatedAt    DateTime    @updatedAt // Waktu terakhir diperbarui
 
-  votes        Vote? // Relasi ke suara yang diberikan
   voterElections VoterElection[] // Relasi ke pemilu yang diikuti
 }
 
 // Kandidat yang mengikuti pemilu
 model Candidate {
-  id          String    @id @default(auto()) @map("_id") @db.ObjectId // ID unik kandidat
-  name        String // Nama kandidat
-  photo       String // URL foto kandidat
-  vision      String // Visi kandidat
-  mission     String // Misi kandidat
-  shortBio    String // Biografi singkat kandidat
-  voteCount   Int       @default(0) // Jumlah suara yang diterima kandidat
-  electionId  String    @db.ObjectId // ID pemilu
-  election    Election  @relation(fields: [electionId], references: [id]) // Relasi ke pemilu
-  createdAt   DateTime  @default(now()) // Waktu pembuatan
-  updatedAt   DateTime  @updatedAt // Waktu terakhir diperbarui
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  photo       String
+  vision      String
+  mission     String
+  shortBio    String
+  voteCount   Int       @default(0)
+  electionId  String    @db.ObjectId
+  election    Election  @relation(fields: [electionId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-  votes       Vote[] // Relasi ke suara yang diterima
+  // New fields for detailed information
+  details     String    // Detailed biography
+  socialMedia SocialMedia? // Social media links
+  education   Education[] // Education history
+  experience  Experience[] // Work experience
+  achievements Achievement[] // Achievements
+  programs    Program[] // Campaign programs
+  stats       CandidateStats? // Performance statistics
+}
+
+// Social media links for candidates
+model SocialMedia {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  candidateId String    @unique @db.ObjectId
+  candidate   Candidate @relation(fields: [candidateId], references: [id])
+  twitter     String?
+  facebook    String?
+  instagram   String?
+  linkedin    String?
+  website     String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// Education history
+model Education {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  candidateId String    @db.ObjectId
+  candidate   Candidate @relation(fields: [candidateId], references: [id])
+  degree      String    // e.g., "S3 Kebijakan Pendidikan"
+  institution String    // e.g., "Universitas Indonesia"
+  year        String    // e.g., "2010"
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// Work experience
+model Experience {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  candidateId String    @db.ObjectId
+  candidate   Candidate @relation(fields: [candidateId], references: [id])
+  position    String    // e.g., "Kepala Dinas Pendidikan"
+  organization String   // e.g., "Kota Bandung"
+  period      String    // e.g., "2015-2020"
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// Achievements
+model Achievement {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  candidateId String    @db.ObjectId
+  candidate   Candidate @relation(fields: [candidateId], references: [id])
+  title       String    // e.g., "Penghargaan Pendidik Teladan Nasional 2018"
+  description String?   // Optional detailed description
+  year        String?   // Optional year of achievement
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// Campaign programs
+model Program {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  candidateId String    @db.ObjectId
+  candidate   Candidate @relation(fields: [candidateId], references: [id])
+  title       String    // e.g., "Pendidikan Inklusif"
+  description String    // Detailed program description
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// Candidate performance statistics
+model CandidateStats {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  candidateId String    @unique @db.ObjectId
+  candidate   Candidate @relation(fields: [candidateId], references: [id])
+  experience  Int       @default(0)  // Score out of 100
+  leadership  Int       @default(0)  // Score out of 100
+  innovation  Int       @default(0)  // Score out of 100
+  publicSupport Int     @default(0)  // Score out of 100
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 // Suara yang diberikan oleh pemilih
 model Vote {
   id            String     @id @default(auto()) @map("_id") @db.ObjectId // ID unik suara
-  voterId       String     @unique @db.ObjectId // ID pemilih
-  candidateId   String     @db.ObjectId // ID kandidat
   electionId    String     @db.ObjectId // ID pemilu
-  voteHash      String // Hash suara untuk integritas
-  zkProof       String? // Zero-knowledge proof (opsional)
-  nullifierHash String? // Nullifier hash untuk privasi (opsional)
+  voterId       String     @db.ObjectId // ID pemilih
+  encryptedData String     // Data suara terenkripsi
+  encryptedKey  String     // Kunci enkripsi yang dienkripsi dengan RSA
+  iv            String     // Initialization Vector untuk AES
+  authTag       String     // Authentication Tag untuk GCM
+  isCounted     Boolean    @default(false) // Status apakah suara sudah dihitung
   createdAt     DateTime   @default(now()) // Waktu pembuatan suara
 
-  voter         Voter?     @relation(fields: [voterId], references: [id]) // Relasi ke pemilih
-  candidate     Candidate? @relation(fields: [candidateId], references: [id]) // Relasi ke kandidat
   election      Election?  @relation(fields: [electionId], references: [id]) // Relasi ke pemilu
 }
 

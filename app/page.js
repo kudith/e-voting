@@ -6,7 +6,6 @@ import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/Hero";
 export default function EVotingPlatform() {
   const [scrolled, setScrolled] = useState(false)
-  const [darkMode, setDarkMode] = useState(false)
   const { scrollYProgress } = useScroll()
   const navbarOpacity = useTransform(scrollYProgress, [0, 0.1], [1, 0.95])
   const navbarBlur = useTransform(scrollYProgress, [0, 0.1], [5, 10])
@@ -21,26 +20,14 @@ export default function EVotingPlatform() {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
-  // Toggle dark mode
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add("dark")
-    } else {
-      document.documentElement.classList.remove("dark")
-    }
-  }, [darkMode])
 
   return (
     <div
-      className={`min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 text-slate-900 transition-colors duration-300 ${
-        darkMode ? "dark" : ""
-      }`}
+      className={`min-h-screen transition-colors duration-300`}
     >
-      <div className="dark:bg-gradient-to-b dark:from-slate-900 dark:to-slate-800 dark:text-white min-h-screen transition-colors duration-300">
+      <div className="min-h-screen transition-colors duration-300">
         <Navbar
           scrolled={scrolled}
-          darkMode={darkMode}
-          setDarkMode={setDarkMode}
           navbarOpacity={navbarOpacity}
           navbarBlur={navbarBlur}
           navbarY={navbarY}

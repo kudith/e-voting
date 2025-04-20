@@ -32,6 +32,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { VoteIcon } from "lucide-react"
 
 const data = {
   user: {
@@ -42,54 +43,25 @@ const data = {
   navMain: [
     {
       title: "Dashboard",
-      url: "/admin/dashboard",
+      url: "/voter/dashboard",
       icon: IconDashboard,
     },
     {
-      title: "Data Pemilih",
-      url: "/admin/dashboard/voters",
+      title: "Kandidat",
+      url: "/voter/candidates",
       icon: IconUsers,
     },
     {
-      title: "Data Kandidat",
-      url: "/admin/dashboard/candidates",
-      icon: IconListDetails,
+      title: "Vote",
+      url: "/voter/vote",
+      icon: VoteIcon,
     },
     {
-      title: "Pemilu", // Menu baru
-      url: "/admin/elections",
-      icon: IconDatabase,
-    },
-    {
-      title: "Hak Pilih", // Menu baru
-      url: "/admin/dashboard/voting-rights",
-      icon: IconFolder,
-    },
-    {
-      title: "Pengaturan Voting",
-      url: "/admin/dashboard/voting-settings",
-      icon: IconSettings,
-    },
-    {
-      title: "Monitoring Hasil",
-      url: "/admin/monitoring",
+      title: "Hasil",
+      url: "/voter/results",
       icon: IconChartBar,
     },
-    {
-      title: "Verifikasi Suara",
-      url: "/admin/verifikasi-suara",
-      icon: IconFileAi,
-    },
-    {
-      title: "Log Aktivitas",
-      url: "/admin/logs",
-      icon: IconReport,
-    },
-    {
-      title: "Dokumen Voting",
-      url: "/admin/documents",
-      icon: IconFileDescription,
-    },
+    
   ],  
   navSecondary: [
     {

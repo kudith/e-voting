@@ -405,10 +405,10 @@ export default function VotersPage() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="space-y-6"
+            className="space-y-6 px-4"
           >
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 px-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 px-14">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -495,7 +495,7 @@ export default function VotersPage() {
                   />
                   <Button 
                     onClick={() => setIsModalOpen(true)} 
-                    className="gap-1 bg-primary hover:bg-primary/90 transition-colors"
+                    className="gap-1 bg-primary hover:bg-primary/90 transition-colors cursor-pointer"
                     disabled={isDeleting}
                   >
                     <Plus className="h-4 w-4" />
@@ -563,8 +563,11 @@ export default function VotersPage() {
                     <div className="flex items-center gap-2 bg-muted/30 px-3 py-1.5 rounded-md">
                       <span className="text-sm font-medium text-muted-foreground">Tampilkan</span>
                       <Select onValueChange={handleRowsPerPageChange} defaultValue={rowsPerPage.toString()}>
-                        <SelectTrigger className="w-[60px] h-7 text-sm border-0 bg-transparent p-0 focus:ring-0">
-                          <SelectValue placeholder={rowsPerPage} />
+                        <SelectTrigger className="h-7 text-sm border-0 bg-transparent p-2 focus:ring-0">
+                          <SelectValue 
+                          placeholder={rowsPerPage} 
+                          className="text-sm text-center"
+                          />
                         </SelectTrigger>
                         <SelectContent>
                           {[10, 20, 30, 40, 50, 100].map((size) => (
@@ -614,7 +617,7 @@ export default function VotersPage() {
                                 onClick={() => handlePageChange(page)}
                                 className={cn(
                                   "h-8 w-8 p-0",
-                                  isCurrentPage && "bg-primary text-primary-foreground"
+                                  isCurrentPage && "bg-primary"
                                 )}
                               >
                                 {page}

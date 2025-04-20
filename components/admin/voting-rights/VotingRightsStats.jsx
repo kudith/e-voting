@@ -117,7 +117,7 @@ export default function VotingRightsStats({
                   <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6 text-green-500" />
                 </div>
                 <div>
-                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">Memenuhi Syarat</p>
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">Eligible</p>
                   <h3 className="text-xl sm:text-2xl font-bold">{eligibleVoters}</h3>
                   <p className="text-xs text-green-600 dark:text-green-400 mt-1">
                     {eligiblePercentage}% dari total
@@ -147,7 +147,7 @@ export default function VotingRightsStats({
                   <XCircle className="h-5 w-5 sm:h-6 sm:w-6 text-red-500" />
                 </div>
                 <div>
-                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">Tidak Memenuhi Syarat</p>
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">Tidak Eligible</p>
                   <h3 className="text-xl sm:text-2xl font-bold">{ineligibleVoters}</h3>
                   <p className="text-xs text-red-600 dark:text-red-400 mt-1">
                     {ineligiblePercentage}% dari total

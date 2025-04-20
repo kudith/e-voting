@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import prisma from "@/lib/prisma";
 
-const prisma = new PrismaClient();
 const KINDE_API_URL = process.env.KINDE_API_URL;
 const KINDE_API_KEY = process.env.KINDE_API_KEY;
 

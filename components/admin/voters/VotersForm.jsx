@@ -416,7 +416,7 @@ export default function VoterForm({ isOpen, onClose, onSave, voter }) {
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-[700px] p-0 overflow-hidden border-0 shadow-lg">
+        <DialogContent className="sm:max-w-[700px] p-0 overflow-hidden border shadow-lg">
           <AnimatePresence>
             {isOpen && (
               <motion.div
@@ -662,7 +662,7 @@ export default function VoterForm({ isOpen, onClose, onSave, voter }) {
                   </div>
                 </div>
 
-                <DialogFooter className="px-6 py-4 bg-muted/50 border-t mx-6 flex flex-col sm:flex-row gap-2 md:gap-2 sm:gap-0 sm:justify-end">
+                <DialogFooter className="px-6 py-4 border-t flex flex-col sm:flex-row gap-2 md:gap-4 sm:gap-0 sm:justify-end bg-muted/50">
                   <Button 
                     variant="outline" 
                     onClick={onClose} 

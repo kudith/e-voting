@@ -1,33 +1,31 @@
-import {Geist, Geist_Mono} from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
-import {AuthProvider} from "@/app/AuthProvider";
-import Navbar from "@/components/Navbar";
+import { ThemeProvider } from "@/components/theme-provider";
+import { cn } from "@/lib/utils";
 
-const geistSans = Geist({
-    variable: "--font-geist-sans",
-    subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-    variable: "--font-geist-mono",
-    subsets: ["latin"],
-});
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-    title: "e-Voting",
-    description: "Voting platform for the future",
+    title: "SiPilih - E-Voting Platform",
+    description: "Platform pemilihan elektronik yang aman dan terpercaya",
 };
 
-export default function RootLayout({children}) {
+export default function RootLayout({ children }) {
     return (
-        <AuthProvider>
-            <html lang="en">
-            <body
-                className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-            >
-            {children}
+        <html lang="en" suppressHydrationWarning>
+            <body className={cn(
+                "min-h-screen bg-background font-sans antialiased",
+                inter.className
+            )}>
+                <ThemeProvider
+                    attribute="class"
+                    defaultTheme="system"
+                    enableSystem
+                    disableTransitionOnChange
+                >
+                    {children}
+                </ThemeProvider>
             </body>
-            </html>
-        </AuthProvider>
+        </html>
     );
 }
