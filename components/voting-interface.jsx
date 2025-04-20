@@ -3,6 +3,7 @@
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Vote, Shield } from "lucide-react"
+import { Card } from "./ui/card"
 
 export default function VotingInterface({ mousePosition }) {
   return (
@@ -30,7 +31,7 @@ export default function VotingInterface({ mousePosition }) {
         />
 
         {/* Main Card */}
-        <div className="relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border border-slate-200/50 dark:border-slate-700/50 p-8 rounded-2xl shadow-xl">
+        <Card className="relative p-8 rounded-2xl shadow-xl">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
               <Vote className="h-6 w-6 text-primary" />
@@ -96,7 +97,7 @@ export default function VotingInterface({ mousePosition }) {
             </div>
 
             {/* Verification */}
-            <div className="bg-slate-100 dark:bg-slate-700/30 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+            <Card className="p-8 py-4 rounded-2xl shadow-xl gap-0.5">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-slate-500 dark:text-slate-400">Blockchain Verification</div>
                 <motion.div
@@ -114,7 +115,7 @@ export default function VotingInterface({ mousePosition }) {
               <div className="mt-2 font-mono text-xs text-slate-500 dark:text-slate-400 truncate">
                 0x7a69c2d5c0b7e3f5e5c8c6d7e8f9a0b1c2d3e4f5...
               </div>
-            </div>
+            </Card>
 
             {/* Action Button */}
             <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
@@ -123,7 +124,7 @@ export default function VotingInterface({ mousePosition }) {
               </Button>
             </motion.div>
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* Floating Elements */}

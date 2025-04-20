@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import prisma from "@/lib/prisma";
 import { z } from "zod";
 import dotenv from "dotenv";
 
 dotenv.config();
-const prisma = new PrismaClient();
 
 const KINDE_API_URL = process.env.KINDE_API_URL;
 const KINDE_API_KEY = process.env.KINDE_API_KEY;
@@ -15,7 +14,8 @@ const voterSchema = z.object({
   email: z.string().email("Invalid email format"),
   phone: z
     .string()
-    .regex(/^\+\d{1,3}\d{9,12}$/, "Phone must include country code, e.g., +628123456789"),
+    .regex(/^(0|\+62)\d{9,13}$/, "Phone must start with 0 or +62 and have 10-15 digits")
+    .transform(val => val.startsWith('0') ? '+62' + val.slice(1) : val),
   facultyId: z.string().min(1, "Faculty ID is required"),
   majorId: z.string().min(1, "Major ID is required"),
   year: z.string().regex(/^\d{4}$/, "Year must be a 4-digit number"),
@@ -61,7 +61,7 @@ export async function POST(req) {
     // Generate unique voter code
     const voterCode = await generateVoterCode(faculty, major);
 
-    // Create user in Kinde
+    // Create user in Kinde with modified approach to avoid conflicts
     const kindeRes = await fetch(`${KINDE_API_URL}/api/v1/user`, {
       method: "POST",
       headers: {
@@ -78,14 +78,7 @@ export async function POST(req) {
             is_verified: true,
             details: { email: data.email },
           },
-          {
-            type: "phone",
-            is_verified: false,
-            details: {
-              phone: data.phone,
-              phone_country_id: "id",
-            },
-          },
+          // We'll add phone identity after user creation to avoid conflicts
           {
             type: "username",
             details: { username: voterCode },
@@ -104,15 +97,96 @@ export async function POST(req) {
         const errorJson = JSON.parse(errorText);
         if (errorJson.errors && errorJson.errors.length > 0) {
           kindeError = errorJson.errors[0].code;
+          console.error("[KINDE ERROR DETAILS]:", JSON.stringify(errorJson.errors, null, 2));
         }
       } catch (e) {
         // If parsing fails, just use the raw error text
         kindeError = errorText;
       }
       
+      // Handle specific Kinde errors
+      if (kindeError === "USER_ALREADY_EXISTS") {
+        // Cek apakah user sudah ada di database kita
+        const existingVoter = await prisma.voter.findUnique({
+          where: { email: data.email }
+        });
+
+        if (existingVoter) {
+          return NextResponse.json(
+            { 
+              error: "Email sudah terdaftar dalam sistem. Silakan gunakan email lain.",
+              kindeError: kindeError
+            },
+            { status: 409 }
+          );
+        } else {
+          // Coba pengecekan email dan nomor telepon secara manual
+          try {
+            // Cek email
+            const emailCheckRes = await fetch(`${KINDE_API_URL}/api/v1/users?email=${encodeURIComponent(data.email)}`, {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${KINDE_API_KEY}`,
+              },
+            });
+            
+            const emailExists = emailCheckRes.ok && 
+              (await emailCheckRes.json()).users?.length > 0;
+            
+            // Cek nomor telepon (hapus prefix +62 untuk perbandingan)
+            const phone = data.phone.replace(/^\+62/, '');
+            const phoneCheckRes = await fetch(`${KINDE_API_URL}/api/v1/users`, {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${KINDE_API_KEY}`,
+              },
+            });
+            
+            let phoneExists = false;
+            if (phoneCheckRes.ok) {
+              const users = (await phoneCheckRes.json()).users || [];
+              phoneExists = users.some(user => 
+                user.phone && user.phone.replace(/^\+62/, '') === phone
+              );
+            }
+            
+            if (emailExists) {
+              return NextResponse.json({
+                error: "Email sudah terdaftar dalam sistem. Silakan gunakan email lain.",
+                detail: "Terdeteksi email yang sama di sistem"
+              }, { status: 409 });
+            }
+            
+            if (phoneExists) {
+              return NextResponse.json({
+                error: "Nomor telepon sudah terdaftar dalam sistem. Silakan gunakan nomor telepon lain.",
+                detail: "Terdeteksi nomor telepon yang sama di sistem"
+              }, { status: 409 });
+            }
+          } catch (checkError) {
+            console.error("[CHECK ERROR]:", checkError);
+          }
+          
+          // Jika tidak ada di database kita, berarti ada masalah dengan Kinde
+          console.error("[KINDE CONFLICT]: User exists in Kinde but not in our database", {
+            email: data.email,
+            phone: data.phone
+          });
+          
+          return NextResponse.json(
+            { 
+              error: "Terjadi konflik dengan sistem autentikasi. Silakan coba dengan email dan nomor telepon yang berbeda.",
+              detail: "Sistem mendeteksi data serupa yang sudah terdaftar",
+              kindeError: kindeError
+            },
+            { status: 409 }
+          );
+        }
+      }
+      
       return NextResponse.json(
         { 
-          error: "Failed to create Kinde user",
+          error: "Gagal membuat user di sistem autentikasi. Silakan coba lagi.",
           kindeError: kindeError
         },
         { status: 500 }

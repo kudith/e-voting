@@ -39,12 +39,12 @@ export default function DeleteConfirmation({
             </div>
             <AlertDialogTitle className="text-xl">{title}</AlertDialogTitle>
           </div>
-          <AlertDialogDescription className="text-base">
-            <div className="flex items-start gap-2 mt-2">
-              <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" />
-              <span>{description}</span>
-            </div>
-          </AlertDialogDescription>
+          <div className="flex items-start gap-2 mt-2">
+            <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" />
+            <AlertDialogDescription className="text-base">
+              {description}
+            </AlertDialogDescription>
+          </div>
         </AlertDialogHeader>
         <AlertDialogFooter className="gap-2 sm:gap-0">
           <AlertDialogCancel className="mt-0 border-muted-foreground/20 hover:bg-muted/50">

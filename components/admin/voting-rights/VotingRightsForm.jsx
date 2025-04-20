@@ -691,7 +691,6 @@ export default function VotingRightsForm({ isOpen, onClose, onSave, voterElectio
                           <Select
                             value={formData.electionId}
                             onValueChange={(value) => handleFieldChange("electionId", value)}
-                            disabled={!!voterElection}
                           >
                             <SelectTrigger 
                               id="electionId"
@@ -1057,7 +1056,7 @@ export default function VotingRightsForm({ isOpen, onClose, onSave, voterElectio
                   )}
                 </div>
 
-                <DialogFooter className="px-6 py-4 bg-muted/50 border-t">
+                <DialogFooter className="px-6 py-4 gap-4 bg-muted/50 border-t">
                   <Button 
                     variant="outline" 
                     onClick={onClose} 

@@ -12,6 +12,7 @@ export const voterSchema = z.object({
   phone: z
     .string()
     .min(1, "Nomor telepon wajib diisi")
-    .regex(/^\+62\d{9,13}$/, "Nomor telepon harus dimulai dengan 0 dan memiliki 10-15 digit"),
+    .regex(/^(0|\+62)\d{9,13}$/, "Nomor telepon harus dimulai dengan 0 atau +62 dan memiliki 10-15 digit")
+    .transform(val => val.startsWith('0') ? '+62' + val.slice(1) : val),
   status: z.string().min(1, "Status wajib dipilih"),
 });

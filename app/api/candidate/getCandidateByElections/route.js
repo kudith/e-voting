@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import prisma from "@/lib/prisma";
 
-const prisma = new PrismaClient();
 
 export async function GET(req) {
     try {
@@ -37,11 +36,24 @@ export async function GET(req) {
 
         // Jika tidak ada kandidat ditemukan
         if (!candidates || candidates.length === 0) {
+            console.log("No candidates found for this election.");
             return NextResponse.json(
                 { error: "No candidates found for the given election ID." },
                 { status: 404 }
             );
         }
+
+        console.log(`Found ${candidates.length} candidates for election ID ${electionId}`);
+        
+        // Log detailed info for each candidate
+        candidates.forEach((candidate, index) => {
+            console.log(`\nCandidate ${index + 1}:`);
+            console.log(`ID: ${candidate.id}`);
+            console.log(`Name: ${candidate.name}`);
+            console.log(`Photo: ${candidate.photo || "NO PHOTO"}`);
+            console.log(`Vision: ${candidate.vision?.substring(0, 30) || "NO VISION"}...`);
+            console.log(`Vote count: ${candidate.voteCount}`);
+        });
 
         // Format data kandidat
         const formattedCandidates = candidates.map((candidate) => ({

@@ -252,7 +252,6 @@ export default function VotingRightsTable({
                       >
                         <div className="flex flex-col">
                           <span>{voterElection.voter?.name || 'N/A'}</span>
-                          <span className="text-xs text-muted-foreground">{voterElection.voter?.email || 'N/A'}</span>
                         </div>
                       </motion.div>
                     </TableCell>
