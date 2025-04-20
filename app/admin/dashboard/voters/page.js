@@ -646,31 +646,29 @@ export default function VotersPage() {
         </div>
       </div>
 
-      {/* Voter Form Modal */}
-      <VoterForm
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setSelectedVoter(null); // Reset selected voter saat modal ditutup
-        }}
-        onSave={(formData) => {
-          setIsModalOpen(false);
-          setDataChanged((prev) => !prev); // Trigger re-fetch data
-          if (selectedVoter) {
-            // Update voter di state jika edit mode
-            setVoters((prev) =>
-              prev.map((voter) =>
-                voter.id === formData.id ? { ...voter, ...formData } : voter
-              )
-            );
-          } else {
-            // Tambahkan voter baru ke state jika add mode
-            setVoters((prev) => [...prev, formData]);
-          }
-          setSelectedVoter(null); // Reset selected voter
-        }}
-        voter={selectedVoter}
-      />
+{/* Formulir Pemilih */}
+<VoterForm
+  isOpen={isModalOpen}
+  onClose={() => {
+    setIsModalOpen(false);
+    setSelectedVoter(null);
+  }}
+  onSave={(formData) => {
+    setIsModalOpen(false);
+    setDataChanged((prev) => !prev);
+    if (selectedVoter) {
+      setVoters((prev) =>
+        prev.map((voter) =>
+          voter.id === formData.id ? { ...voter, ...formData } : voter
+        )
+      );
+    } else {
+      setVoters((prev) => [...prev, formData]);
+    }
+    setSelectedVoter(null);
+  }}
+  voter={selectedVoter}
+/>
 
       <DeleteConfirmation
         isOpen={isDeleteDialogOpen}

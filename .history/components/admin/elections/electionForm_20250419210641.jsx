@@ -1,0 +1,250 @@
+"use client";
+
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { electionSchema } from "@/validations/ElectionSchme";
+import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  XCircle,
+  Clipboard,
+  FileText,
+  Calendar,
+  CheckCircle2,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+
+// Fungsi untuk memformat tanggal menjadi dd-mm-yyyy
+const formatDate = (dateString) => {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  return `${day}-${month}-${year}`;
+};
+
+// Fungsi untuk memformat tanggal kembali ke yyyy-mm-dd (untuk input tipe date)
+const parseDate = (formattedDate) => {
+  const [day, month, year] = formattedDate.split("-");
+  return `${year}-${month}-${day}`;
+};
+
+export default function ElectionForm({ isOpen, onClose, onSave, election }) {
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    reset,
+    watch,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(electionSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      startDate: "",
+      endDate: "",
+      status: "active",
+    },
+  });
+
+  useEffect(() => {
+    if (isOpen) {
+      if (election) {
+        reset({
+          title: election.title || "",
+          description: election.description || "",
+          startDate: election.startDate
+            ? formatDate(election.startDate)
+            : "",
+          endDate: election.endDate ? formatDate(election.endDate) : "",
+          status: election.status || "active",
+        });
+      } else {
+        reset();
+      }
+    }
+  }, [isOpen, election, reset]);
+
+  const onSubmit = (formData) => {
+    // Konversi tanggal kembali ke format yyyy-mm-dd sebelum disimpan
+    const formattedData = {
+      ...formData,
+      startDate: parseDate(formData.startDate),
+      endDate: parseDate(formData.endDate),
+    };
+    onSave(formattedData);
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[700px] p-0 overflow-hidden border-0 shadow-lg">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 20 }}
+          transition={{ duration: 0.3 }}
+          className="w-full"
+        >
+          <div className="bg-background px-6 py-5 border-b">
+            <DialogHeader className="mb-0">
+              <DialogTitle className="text-xl font-semibold">
+                {election ? "Edit Pemilihan" : "Tambah Pemilihan Baru"}
+              </DialogTitle>
+              <DialogDescription className="text-muted-foreground">
+                {election
+                  ? "Perbarui informasi pemilihan di bawah ini."
+                  : "Isi informasi pemilihan baru di bawah ini."}
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <div className="p-6 max-h-[70vh] overflow-y-auto">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Title Field */}
+                <div className="space-y-2">
+                  <Label htmlFor="title" className="flex items-center gap-1.5">
+                    <Clipboard className="h-4 w-4 text-muted-foreground" />
+                    Judul <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="title"
+                    {...register("title")}
+                    placeholder="Masukkan judul pemilihan"
+                    className={cn(
+                      "transition-colors",
+                      errors.title &&
+                        "border-destructive focus-visible:ring-destructive"
+                    )}
+                  />
+                  {errors.title && (
+                    <p className="text-destructive text-xs flex items-center gap-1">
+                      <XCircle className="h-3 w-3" />
+                      {errors.title.message}
+                    </p>
+                  )}
+                </div>
+
+                {/* Start Date Field */}
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="startDate"
+                    className="flex items-center gap-1.5"
+                  >
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    Tanggal Mulai <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="startDate"
+                    type="date"
+                    value={parseDate(watch("startDate"))}
+                    onChange={(e) =>
+                      setValue("startDate", formatDate(e.target.value), {
+                        shouldValidate: true,
+                      })
+                    }
+                    className={cn(
+                      "transition-colors",
+                      errors.startDate &&
+                        "border-destructive focus-visible:ring-destructive"
+                    )}
+                  />
+                  {errors.startDate && (
+                    <p className="text-destructive text-xs flex items-center gap-1">
+                      <XCircle className="h-3 w-3" />
+                      {errors.startDate.message}
+                    </p>
+                  )}
+                </div>
+
+                {/* End Date Field */}
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="endDate"
+                    className="flex items-center gap-1.5"
+                  >
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    Tanggal Selesai <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="endDate"
+                    type="date"
+                    value={parseDate(watch("endDate"))}
+                    onChange={(e) =>
+                      setValue("endDate", formatDate(e.target.value), {
+                        shouldValidate: true,
+                      })
+                    }
+                    className={cn(
+                      "transition-colors",
+                      errors.endDate &&
+                        "border-destructive focus-visible:ring-destructive"
+                    )}
+                  />
+                  {errors.endDate && (
+                    <p className="text-destructive text-xs flex items-center gap-1">
+                      <XCircle className="h-3 w-3" />
+                      {errors.endDate.message}
+                    </p>
+                  )}
+                </div>
+
+                {/* Status Field */}
+                <div className="space-y-2">
+                  <Label htmlFor="status" className="flex items-center gap-1.5">
+                    <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+                    Status <span className="text-destructive">*</span>
+                  </Label>
+                  <select
+                    id="status"
+                    {...register("status")}
+                    className={cn(
+                      "w-full transition-colors border rounded-md p-2",
+                      errors.status &&
+                        "border-destructive focus-visible:ring-destructive"
+                    )}
+                  >
+                    <option value="active">Aktif</option>
+                    <option value="inactive">Tidak Aktif</option>
+                  </select>
+                  {errors.status && (
+                    <p className="text-destructive text-xs flex items-center gap-1">
+                      <XCircle className="h-3 w-3" />
+                      {errors.status.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter className="px-6 py-4 bg-muted/50 border-t mx-6 flex flex-col sm:flex-row gap-2 md:gap-2 sm:gap-0 sm:justify-end">
+              <Button
+                variant="outline"
+                onClick={onClose}
+                className="w-full sm:w-auto"
+              >
+                Batal
+              </Button>
+              <Button type="submit" className="w-full sm:w-auto">
+                {election ? "Perbarui Pemilihan" : "Tambah Pemilihan"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </motion.div>
+      </DialogContent>
+    </Dialog>
+  );
+}
