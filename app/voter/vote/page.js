@@ -13,6 +13,7 @@ import { CandidateCard } from "@/components/voter/vote/CandidateCard";
 import { ConfirmationModal } from "@/components/voter/vote/ConfirmationModal";
 import { SuccessPage } from "@/components/voter/vote/SuccessPage";
 import { AlreadyVotedPage } from "@/components/voter/vote/AlreadyVotedPage";
+import { CandidateDetailModal } from "@/components/voter/vote/CandidateDetailModal";
 
 export default function VotingPage() {
   const router = useRouter();
@@ -29,6 +30,8 @@ export default function VotingPage() {
   const [voterData, setVoterData] = useState(null);
   const [hasAlreadyVoted, setHasAlreadyVoted] = useState(false);
   const [voterElectionData, setVoterElectionData] = useState(null);
+  const [selectedCandidateForDetail, setSelectedCandidateForDetail] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   // First, fetch the current voter data and their elections
   useEffect(() => {
@@ -149,10 +152,18 @@ export default function VotingPage() {
     }
   };
 
+  const handleViewCandidateDetails = (candidate) => {
+    setSelectedCandidateForDetail(candidate);
+    setShowDetailModal(true);
+  };
+
   if (isAuthLoading || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          <p className="text-muted-foreground">Memuat...</p>
+        </div>
       </div>
     );
   }
@@ -199,7 +210,7 @@ export default function VotingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -207,13 +218,13 @@ export default function VotingPage() {
           transition={{ duration: 0.5 }}
           className="text-center mb-12"
         >
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+          <h1 className="text-4xl font-bold mb-4">
             Pilih Kandidat Anda
           </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+          <p className="text-muted-foreground max-w-2xl mx-auto">
             Anda hanya dapat memilih satu kali. Pastikan pilihan Anda sudah tepat sebelum melanjutkan.
           </p>
-          <p className="text-sm text-blue-600 dark:text-blue-400 mt-2">
+          <p className="text-primary text-sm mt-2 font-medium">
             Pemilu: {currentElection.title}
           </p>
         </motion.div>
@@ -226,17 +237,14 @@ export default function VotingPage() {
           transition={{ delay: 0.2 }}
           className="mt-12"
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {candidates.map((candidate) => (
               <CandidateCard
                 key={candidate.id}
                 candidate={candidate}
                 isSelected={selectedCandidate?.id === candidate.id}
                 onSelect={handleCandidateSelect}
-                onViewDetails={() => {
-                  // Implement candidate details modal
-                  toast.info("Fitur detail kandidat akan segera hadir");
-                }}
+                onViewDetails={handleViewCandidateDetails}
               />
             ))}
           </div>
@@ -250,13 +258,13 @@ export default function VotingPage() {
         >
           <Button
             size="lg"
-            className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 py-6 rounded-full text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-8 py-6 rounded-full text-lg font-semibold shadow-md hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={!selectedCandidate || isSubmitting}
             onClick={() => setShowConfirmation(true)}
           >
             {isSubmitting ? (
               <div className="flex items-center gap-2">
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <Loader2 className="w-5 h-5 animate-spin" />
                 <span>Mengirim...</span>
               </div>
             ) : (
@@ -271,6 +279,12 @@ export default function VotingPage() {
         onClose={() => setShowConfirmation(false)}
         onConfirm={handleSubmit}
         candidate={selectedCandidate}
+      />
+
+      <CandidateDetailModal 
+        isOpen={showDetailModal}
+        onClose={() => setShowDetailModal(false)}
+        candidate={selectedCandidateForDetail}
       />
     </div>
   );

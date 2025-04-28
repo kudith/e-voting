@@ -228,31 +228,6 @@ const VerificationResult = ({ result, onReset }) => {
             </Alert>
           </CardContent>
         )}
-
-        <CardFooter
-          className={cn(
-            "flex flex-col sm:flex-row gap-2 pt-2 pb-4 px-6",
-            !result.verified && "justify-center"
-          )}
-        >
-          {result.verified ? (
-            <>
-              <Button
-                variant="outline"
-                className="w-full sm:w-auto gap-2 border-primary/20 hover:border-primary/40"
-              >
-                <Share2 className="h-4 w-4" /> Bagikan Hasil
-              </Button>
-              <Button variant="default" className="w-full sm:w-auto gap-2">
-                Lihat Status Pemilihan
-              </Button>
-            </>
-          ) : (
-            <Button variant="secondary" className="gap-2" onClick={onReset}>
-              Coba Lagi
-            </Button>
-          )}
-        </CardFooter>
       </Card>
     </motion.div>
   );

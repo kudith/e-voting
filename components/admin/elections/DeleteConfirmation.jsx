@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -10,6 +11,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Trash2, AlertTriangle } from "lucide-react";
 
 export default function DeleteConfirmation({
   isOpen,
@@ -20,24 +22,51 @@ export default function DeleteConfirmation({
 }) {
   return (
     <AlertDialog open={isOpen} onOpenChange={onClose}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-          <AlertDialogDescription>
-            {count > 1
-              ? `This action will permanently delete ${count} elections from the system. This action cannot be undone.`
-              : `This action will permanently delete the election "${electionTitle}" from the system. This action cannot be undone.`}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={onConfirm}
-            className="bg-red-500 hover:bg-red-600"
-          >
-            Delete
-          </AlertDialogAction>
-        </AlertDialogFooter>
+      <AlertDialogContent className="sm:max-w-[425px]">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 20 }}
+          transition={{ duration: 0.2 }}
+        >
+          <AlertDialogHeader>
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              <AlertDialogTitle>Konfirmasi Penghapusan</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription className="pt-4">
+              {count > 1 ? (
+                <div className="space-y-2">
+                  <div className="text-base font-medium text-foreground">
+                    Anda akan menghapus {count} pemilu
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Tindakan ini akan menghapus pemilu yang dipilih secara permanen dari sistem. Tindakan ini tidak dapat dibatalkan.
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="text-base font-medium text-foreground">
+                    Anda akan menghapus pemilu "{electionTitle}"
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Tindakan ini akan menghapus pemilu secara permanen dari sistem. Tindakan ini tidak dapat dibatalkan.
+                  </div>
+                </div>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-6">
+            <AlertDialogCancel className="border-2">Batal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={onConfirm}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 flex items-center gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </motion.div>
       </AlertDialogContent>
     </AlertDialog>
   );

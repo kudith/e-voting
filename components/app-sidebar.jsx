@@ -65,47 +65,12 @@ const data = {
       icon: IconFolder,
     },
     {
-      title: "Pengaturan Voting",
-      url: "/admin/dashboard/voting-settings",
-      icon: IconSettings,
-    },
-    {
       title: "Monitoring Hasil",
-      url: "/admin/monitoring",
+      url: "/admin/dashboard/monitoring",
       icon: IconChartBar,
-    },
-    {
-      title: "Verifikasi Suara",
-      url: "/admin/verifikasi-suara",
-      icon: IconFileAi,
-    },
-    {
-      title: "Log Aktivitas",
-      url: "/admin/logs",
-      icon: IconReport,
-    },
-    {
-      title: "Dokumen Voting",
-      url: "/admin/documents",
-      icon: IconFileDescription,
     },
   ],  
   navSecondary: [
-    {
-      title: "Settings",
-      url: "/admin/settings",
-      icon: IconSettings,
-    },
-    {
-      title: "Get Help",
-      url: "/admin/help",
-      icon: IconHelp,
-    },
-    {
-      title: "Search",
-      url: "/admin/search",
-      icon: IconSearch,
-    },
   ],
 }
 

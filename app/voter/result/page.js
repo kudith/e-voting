@@ -89,7 +89,7 @@ export default function ElectionResultPage() {
           setActiveElection(voterElectionData);
           
           // Langsung mengambil hasil pemilihan menggunakan ID pemilihan
-          await fetchElectionResults(voterElectionData.election.id);
+          await fetchElectionResults(voterElectionData?.election?.id);
           return;
         }
         
@@ -98,7 +98,7 @@ export default function ElectionResultPage() {
         const voterResponse = await fetch('/api/voter/getCurrentVoter');
         
         if (!voterResponse.ok) {
-          throw new Error(`Failed to fetch voter data: ${voterResponse.statusText}`);
+          throw new Error(`Gagal mengambil data pemilih: ${voterResponse.statusText}`);
         }
         
         const voterData = await voterResponse.json();
@@ -108,19 +108,19 @@ export default function ElectionResultPage() {
         const voterElectionsResponse = await fetch('/api/voterElection/getAllVoterElection');
         
         if (!voterElectionsResponse.ok) {
-          throw new Error(`Failed to fetch voter elections: ${voterElectionsResponse.statusText}`);
+          throw new Error(`Gagal mengambil data pemilihan pemilih: ${voterElectionsResponse.statusText}`);
         }
         
         const allVoterElections = await voterElectionsResponse.json();
         
         // Find the election for current voter - using voter.id from each voterElection
         const currentVoterElection = allVoterElections.find(ve => 
-          ve.voter.id === voterId && 
-          (ve.election.status === "active" || ve.election.status === "ongoing" || ve.election.status === "completed")
+          ve?.voter?.id === voterId && 
+          (ve?.election?.status === "active" || ve?.election?.status === "ongoing" || ve?.election?.status === "completed")
         );
         
         if (!currentVoterElection) {
-          setError("No active or completed election found for your account");
+          setError("Tidak ditemukan pemilihan aktif atau selesai untuk akun Anda");
           setLoading(false);
           return;
         }
@@ -128,9 +128,9 @@ export default function ElectionResultPage() {
         setActiveElection(currentVoterElection);
 
         // Step 4: Fetch election results using the election ID
-        await fetchElectionResults(currentVoterElection.election.id);
+        await fetchElectionResults(currentVoterElection?.election?.id);
       } catch (err) {
-        console.error("Error fetching current election:", err);
+        console.error("Error mengambil data pemilihan saat ini:", err);
         setError(err.message);
         setLoading(false);
       }
@@ -141,18 +141,18 @@ export default function ElectionResultPage() {
         const response = await fetch(`/api/election/results/${electionId}`);
         
         if (!response.ok) {
-          throw new Error(`Failed to fetch results: ${response.statusText}`);
+          throw new Error(`Gagal mengambil hasil: ${response.statusText}`);
         }
         
         const data = await response.json();
         
         if (!data.success) {
-          throw new Error(data.error || "Failed to load election results");
+          throw new Error(data.error || "Gagal memuat hasil pemilihan");
         }
         
         setResultData(data.data);
       } catch (err) {
-        console.error("Error fetching election results:", err);
+        console.error("Error mengambil hasil pemilihan:", err);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -173,12 +173,12 @@ export default function ElectionResultPage() {
           <CardHeader>
             <CardTitle className="text-red-500">
               <IconAlertCircle className="inline-block mr-2" size={24} />
-              Error Loading Results
+              Error Memuat Hasil
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="mb-6">{error}</p>
-            {error.includes("No active or completed election") && (
+            {error.includes("Tidak ditemukan pemilihan aktif atau selesai") && (
               <div className="text-muted-foreground text-sm">
                 <p>Saat ini tidak ada pemilihan aktif atau selesai yang sedang diikuti oleh akun Anda.</p>
                 <p className="mt-2">Silakan kembali ke halaman dashboard.</p>
@@ -219,44 +219,58 @@ export default function ElectionResultPage() {
   } = resultData;
 
   // Format data for charts
-  const candidateChartData = candidates.map(candidate => ({
-    name: candidate.name,
-    votes: Number(candidate.voteCount),
-    percentage: Number(candidate.percentage)
-  }));
+  const candidateChartData = candidates?.map(candidate => {
+    // Calculate correct percentage based on total votes for all candidates
+    const totalVotes = election?.totalVotes || candidates?.reduce((sum, c) => sum + Number(c.voteCount || 0), 0) || 0;
+    const percentage = totalVotes > 0 ? ((Number(candidate.voteCount || 0) / totalVotes) * 100).toFixed(2) : "0.00";
+    
+    return {
+      name: candidate.name,
+      votes: Number(candidate.voteCount || 0),
+      percentage: Number(percentage)
+    };
+  }) || [];
 
-  const timelineChartData = timeline.map(item => ({
+  const timelineChartData = timeline?.map(item => ({
     date: item.date,
     votes: item.count
-  }));
+  })) || [];
 
   // Format participation by faculty for chart
-  const facultyParticipationData = Object.entries(participationByFaculty).map(
+  const facultyParticipationData = Object.entries(participationByFaculty || {}).map(
     ([faculty, count]) => ({
       name: faculty,
       value: count
     })
   );
 
+  // Format participation by major for chart
+  const majorParticipationData = Object.entries(participationByMajor || {}).map(
+    ([major, count]) => ({
+      name: major,
+      value: count
+    })
+  );
+
   // Chart configurations
-  const candidateChartConfig = candidates.reduce((config, candidate, index) => {
+  const candidateChartConfig = candidates?.reduce((config, candidate, index) => {
     config[candidate.name] = {
       label: candidate.name,
       color: `hsl(var(--chart-${(index % 5) + 1}))`
     };
     return config;
   }, {
-    votes: { label: "Total Votes" }
-  });
+    votes: { label: "Total Suara" }
+  }) || {};
 
   const timelineChartConfig = {
     votes: {
-      label: "Votes",
+      label: "Suara",
       color: "hsl(var(--chart-1))"
     }
   };
 
-  const facultyChartConfig = Object.entries(participationByFaculty).reduce((config, [faculty, _], index) => {
+  const facultyChartConfig = Object.entries(participationByFaculty || {}).reduce((config, [faculty, _], index) => {
     config[faculty] = {
       label: faculty,
       color: `hsl(var(--chart-${(index % 5) + 1}))`
@@ -264,13 +278,21 @@ export default function ElectionResultPage() {
     return config;
   }, {});
 
+  const majorChartConfig = Object.entries(participationByMajor || {}).reduce((config, [major, _], index) => {
+    config[major] = {
+      label: major,
+      color: `hsl(var(--chart-${(index % 5) + 1}))`
+    };
+    return config;
+  }, {});
+
   const participationChartConfig = {
     voted: {
-      label: "Voted",
+      label: "Memilih",
       color: "hsl(var(--chart-2))"
     },
     notVoted: {
-      label: "Not Voted",
+      label: "Tidak Memilih",
       color: "hsl(var(--chart-3))"
     }
   };
@@ -287,19 +309,31 @@ export default function ElectionResultPage() {
     }
   };
 
+  // Status translation
+  const getStatusLabel = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'ongoing': 
+      case 'active': 
+        return 'Berlangsung';
+      case 'completed': return 'Selesai';
+      case 'upcoming': return 'Akan Datang';
+      default: return status;
+    }
+  };
+
   return (
     <div className="container mx-auto py-8 px-4">
       <header className="mb-8">
-        <h1 className="text-3xl font-bold">{election.title} Results</h1>
+        <h1 className="text-3xl font-bold">Hasil {election?.title}</h1>
         <div className="flex items-center mt-2 space-x-2">
-          <Badge className={`${getStatusColor(election.status)}`}>
-            {election.status}
+          <Badge className={`${getStatusColor(election?.status)}`}>
+            {getStatusLabel(election?.status)}
           </Badge>
           <p className="text-muted-foreground">
-            {new Date(election.startDate).toLocaleDateString()} - {new Date(election.endDate).toLocaleDateString()}
+            {new Date(election?.startDate).toLocaleDateString()} - {new Date(election?.endDate).toLocaleDateString()}
           </p>
         </div>
-        <p className="mt-2 text-muted-foreground">{election.description}</p>
+        <p className="mt-2 text-muted-foreground">{election?.description}</p>
       </header>
 
       {/* Winner Section */}
@@ -308,9 +342,9 @@ export default function ElectionResultPage() {
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2">
               <IconTrophy className="text-amber-500" />
-              Winner
+              Pemenang
             </CardTitle>
-            <CardDescription>Election Winner with Highest Vote Count</CardDescription>
+            <CardDescription>Pemenang Pemilihan dengan Jumlah Suara Tertinggi</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col items-center justify-center pb-2 pt-4">
             <div className="flex flex-col items-center gap-4 md:flex-row">
@@ -324,13 +358,22 @@ export default function ElectionResultPage() {
                 <h2 className="text-2xl font-bold">{winner.name}</h2>
                 <div className="mt-2 flex flex-col gap-1">
                   <p className="flex items-center gap-1">
-                    <span className="font-semibold">{winner.voteCount}</span> votes
+                    <span className="font-semibold">{winner.voteCount}</span> suara
                   </p>
-                  <Progress
-                    value={candidates[0]?.percentage}
-                    className="h-2 w-48"
-                  />
-                  <p className="text-sm text-muted-foreground">{candidates[0]?.percentage}% of total votes</p>
+                  {/* Calculate correct percentage for winner */}
+                  {(() => {
+                    const totalVotes = election?.totalVotes || candidates?.reduce((sum, c) => sum + Number(c.voteCount || 0), 0) || 0;
+                    const percentage = totalVotes > 0 ? ((Number(winner.voteCount || 0) / totalVotes) * 100).toFixed(2) : "0.00";
+                    return (
+                      <>
+                        <Progress
+                          value={Number(percentage)}
+                          className="h-2 w-48"
+                        />
+                        <p className="text-sm text-muted-foreground">{percentage}% dari total suara</p>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
@@ -342,24 +385,24 @@ export default function ElectionResultPage() {
         {/* Total Votes Card */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Total Votes</CardTitle>
+            <CardTitle className="text-lg">Total Suara</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{election.totalVotes}</div>
-            <p className="text-sm text-muted-foreground">Recorded votes in this election</p>
+            <div className="text-3xl font-bold">{election?.totalVotes || 0}</div>
+            <p className="text-sm text-muted-foreground">Suara tercatat dalam pemilihan ini</p>
           </CardContent>
         </Card>
 
         {/* Participation Rate Card */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Participation</CardTitle>
+            <CardTitle className="text-lg">Partisipasi</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{participation.percentage}%</div>
-            <Progress value={Number(participation.percentage)} className="mt-2" />
+            <div className="text-3xl font-bold">{participation?.percentage || 0}%</div>
+            <Progress value={Number(participation?.percentage || 0)} className="mt-2" />
             <p className="text-sm text-muted-foreground">
-              {participation.voted} of {participation.totalVoters} eligible voters
+              {participation?.voted || 0} dari {participation?.totalVoters || 0} pemilih yang memenuhi syarat
             </p>
           </CardContent>
         </Card>
@@ -367,12 +410,12 @@ export default function ElectionResultPage() {
         {/* Candidates Card */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Candidates</CardTitle>
+            <CardTitle className="text-lg">Kandidat</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{candidates.length}</div>
+            <div className="text-3xl font-bold">{candidates?.length || 0}</div>
             <p className="text-sm text-muted-foreground">
-              Total candidates in the election
+              Total kandidat dalam pemilihan
             </p>
           </CardContent>
         </Card>
@@ -380,14 +423,14 @@ export default function ElectionResultPage() {
         {/* Date Card */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Election Period</CardTitle>
+            <CardTitle className="text-lg">Periode Pemilihan</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-xl font-medium">
-              {new Date(election.startDate).toLocaleDateString()} - {new Date(election.endDate).toLocaleDateString()}
+              {new Date(election?.startDate).toLocaleDateString()} - {new Date(election?.endDate).toLocaleDateString()}
             </div>
             <p className="text-sm text-muted-foreground">
-              {new Date(election.endDate) < new Date() ? 'Completed' : 'Active'} election
+              Pemilihan {new Date(election?.endDate) < new Date() ? 'selesai' : 'aktif'}
             </p>
           </CardContent>
         </Card>
@@ -398,8 +441,8 @@ export default function ElectionResultPage() {
         {/* Vote Distribution Chart */}
         <Card className="col-span-1">
           <CardHeader>
-            <CardTitle>Vote Distribution</CardTitle>
-            <CardDescription>Breakdown of votes by candidate</CardDescription>
+            <CardTitle>Distribusi Suara</CardTitle>
+            <CardDescription>Rincian suara per kandidat</CardDescription>
           </CardHeader>
           <CardContent className="p-6">
             <ChartContainer 
@@ -441,7 +484,7 @@ export default function ElectionResultPage() {
           </CardContent>
           <CardFooter>
             <p className="text-xs text-muted-foreground">
-              Total votes: {election.totalVotes}
+              Total suara: {election?.totalVotes || 0}
             </p>
           </CardFooter>
         </Card>
@@ -449,8 +492,8 @@ export default function ElectionResultPage() {
         {/* Voting Timeline */}
         <Card className="col-span-1">
           <CardHeader>
-            <CardTitle>Voting Timeline</CardTitle>
-            <CardDescription>Number of votes over time</CardDescription>
+            <CardTitle>Timeline Pemilihan</CardTitle>
+            <CardDescription>Jumlah suara dari waktu ke waktu</CardDescription>
           </CardHeader>
           <CardContent className="p-6">
             <ChartContainer 
@@ -484,7 +527,7 @@ export default function ElectionResultPage() {
           </CardContent>
           <CardFooter>
             <p className="text-xs text-muted-foreground">
-              From {timeline[0]?.date || election.startDate} to {timeline[timeline.length - 1]?.date || election.endDate}
+              Dari {timeline?.[0]?.date || election?.startDate} hingga {timeline?.[timeline?.length - 1]?.date || election?.endDate}
             </p>
           </CardFooter>
         </Card>
@@ -496,15 +539,15 @@ export default function ElectionResultPage() {
           <TabsList className="grid w-full grid-cols-3 lg:w-auto">
             <TabsTrigger value="candidates">
               <IconUsers className="mr-2 h-4 w-4" />
-              Candidates
+              Kandidat
             </TabsTrigger>
             <TabsTrigger value="demographics">
               <IconBuildingSkyscraper className="mr-2 h-4 w-4" />
-              Demographics
+              Demografi
             </TabsTrigger>
             <TabsTrigger value="participation">
               <IconChartBar className="mr-2 h-4 w-4" />
-              Participation
+              Partisipasi
             </TabsTrigger>
           </TabsList>
 
@@ -512,35 +555,41 @@ export default function ElectionResultPage() {
           <TabsContent value="candidates" className="mt-6">
             <Card>
               <CardHeader>
-                <CardTitle>Candidate Performance</CardTitle>
-                <CardDescription>Detailed breakdown of votes for each candidate</CardDescription>
+                <CardTitle>Performa Kandidat</CardTitle>
+                <CardDescription>Rincian detail suara untuk setiap kandidat</CardDescription>
               </CardHeader>
               <CardContent>
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Rank</TableHead>
-                      <TableHead>Candidate</TableHead>
-                      <TableHead>Votes</TableHead>
-                      <TableHead>Percentage</TableHead>
-                      <TableHead>Performance</TableHead>
+                      <TableHead>Peringkat</TableHead>
+                      <TableHead>Kandidat</TableHead>
+                      <TableHead>Suara</TableHead>
+                      <TableHead>Persentase</TableHead>
+                      <TableHead>Performa</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {candidates.map((candidate, index) => (
-                      <TableRow key={candidate.id}>
-                        <TableCell className="font-medium">{index + 1}</TableCell>
-                        <TableCell>{candidate.name}</TableCell>
-                        <TableCell>{candidate.voteCount}</TableCell>
-                        <TableCell>{candidate.percentage}%</TableCell>
-                        <TableCell className="w-[30%]">
-                          <Progress 
-                            value={Number(candidate.percentage)} 
-                            className="h-2" 
-                          />
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {candidates?.map((candidate, index) => {
+                      // Calculate correct percentage based on total votes
+                      const totalVotes = election?.totalVotes || candidates?.reduce((sum, c) => sum + Number(c.voteCount || 0), 0) || 0;
+                      const percentage = totalVotes > 0 ? ((Number(candidate.voteCount || 0) / totalVotes) * 100).toFixed(2) : "0.00";
+                      
+                      return (
+                        <TableRow key={candidate.id}>
+                          <TableCell className="font-medium">{index + 1}</TableCell>
+                          <TableCell>{candidate.name}</TableCell>
+                          <TableCell>{candidate.voteCount || 0}</TableCell>
+                          <TableCell>{percentage}%</TableCell>
+                          <TableCell className="w-[30%]">
+                            <Progress 
+                              value={Number(percentage)} 
+                              className="h-2" 
+                            />
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </CardContent>
@@ -552,8 +601,8 @@ export default function ElectionResultPage() {
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               <Card>
                 <CardHeader>
-                  <CardTitle>Faculty Distribution</CardTitle>
-                  <CardDescription>Voting patterns across faculties</CardDescription>
+                  <CardTitle>Distribusi Fakultas</CardTitle>
+                  <CardDescription>Pola pemilihan berdasarkan fakultas</CardDescription>
                 </CardHeader>
                 <CardContent className="p-6">
                   <ChartContainer 
@@ -587,13 +636,48 @@ export default function ElectionResultPage() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Candidate Faculty Performance</CardTitle>
-                  <CardDescription>How candidates performed across faculties</CardDescription>
+                  <CardTitle>Distribusi Jurusan</CardTitle>
+                  <CardDescription>Pola pemilihan berdasarkan jurusan</CardDescription>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <ChartContainer 
+                    config={majorChartConfig} 
+                    className="min-h-[300px] w-full"
+                  >
+                    <PieChart margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                      <Pie
+                        data={majorParticipationData}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={80}
+                        paddingAngle={2}
+                      >
+                        {majorParticipationData.map((entry, index) => (
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={`hsl(var(--chart-${(index % 5) + 1}))`} 
+                          />
+                        ))}
+                      </Pie>
+                      <ChartTooltip content={<ChartTooltipContent nameKey="name" />} />
+                      <ChartLegend content={<ChartLegendContent />} />
+                    </PieChart>
+                  </ChartContainer>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Performa Kandidat per Fakultas</CardTitle>
+                  <CardDescription>Bagaimana performa kandidat di berbagai fakultas</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <ScrollArea className="h-80 pr-4">
-                    {candidates.map((candidate) => {
-                      const candidateFaculty = candidateFacultyStats[candidate.id] || {};
+                    {candidates?.map((candidate) => {
+                      const candidateFaculty = candidateFacultyStats?.[candidate.id] || {};
                       return (
                         <div key={candidate.id} className="mb-6">
                           <h3 className="mb-2 font-semibold">{candidate.name}</h3>
@@ -601,9 +685,38 @@ export default function ElectionResultPage() {
                             <div key={faculty} className="mb-2">
                               <div className="flex items-center justify-between text-sm">
                                 <span>{faculty}</span>
-                                <span className="font-medium">{stats.percentage}%</span>
+                                <span className="font-medium">{stats?.percentage || 0}%</span>
                               </div>
-                              <Progress value={Number(stats.percentage)} className="h-1.5" />
+                              <Progress value={Number(stats?.percentage || 0)} className="h-1.5" />
+                            </div>
+                          ))}
+                          <Separator className="my-4" />
+                        </div>
+                      );
+                    })}
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Performa Kandidat per Jurusan</CardTitle>
+                  <CardDescription>Bagaimana performa kandidat di berbagai jurusan</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ScrollArea className="h-80 pr-4">
+                    {candidates?.map((candidate) => {
+                      const candidateMajor = candidateMajorStats?.[candidate.id] || {};
+                      return (
+                        <div key={candidate.id} className="mb-6">
+                          <h3 className="mb-2 font-semibold">{candidate.name}</h3>
+                          {Object.entries(candidateMajor).map(([major, stats]) => (
+                            <div key={major} className="mb-2">
+                              <div className="flex items-center justify-between text-sm">
+                                <span>{major}</span>
+                                <span className="font-medium">{stats?.percentage || 0}%</span>
+                              </div>
+                              <Progress value={Number(stats?.percentage || 0)} className="h-1.5" />
                             </div>
                           ))}
                           <Separator className="my-4" />
@@ -621,8 +734,8 @@ export default function ElectionResultPage() {
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               <Card>
                 <CardHeader>
-                  <CardTitle>Voter Participation</CardTitle>
-                  <CardDescription>Overview of voter turnout</CardDescription>
+                  <CardTitle>Partisipasi Pemilih</CardTitle>
+                  <CardDescription>Ikhtisar partisipasi pemilih</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center justify-center p-6 pt-0">
                   <div className="relative h-56 w-56">
@@ -633,8 +746,8 @@ export default function ElectionResultPage() {
                       <PieChart>
                         <Pie
                           data={[
-                            { name: "Voted", value: participation.voted },
-                            { name: "Not Voted", value: participation.notVoted }
+                            { name: "Memilih", value: participation?.voted || 0 },
+                            { name: "Tidak Memilih", value: participation?.notVoted || 0 }
                           ]}
                           dataKey="value"
                           nameKey="name"
@@ -653,19 +766,19 @@ export default function ElectionResultPage() {
                     </ChartContainer>
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="text-center">
-                        <div className="text-4xl font-bold">{participation.percentage}%</div>
-                        <div className="text-sm text-muted-foreground">Participation</div>
+                        <div className="text-4xl font-bold">{participation?.percentage || 0}%</div>
+                        <div className="text-sm text-muted-foreground">Partisipasi</div>
                       </div>
                     </div>
                   </div>
                   <div className="mt-4 flex items-center gap-8">
                     <div className="flex items-center">
                       <div className="mr-2 h-3 w-3 rounded-full bg-[hsl(var(--chart-2))]"></div>
-                      <span>{participation.voted} Voted</span>
+                      <span>{participation?.voted || 0} Memilih</span>
                     </div>
                     <div className="flex items-center">
                       <div className="mr-2 h-3 w-3 rounded-full bg-[hsl(var(--chart-3))]"></div>
-                      <span>{participation.notVoted} Not Voted</span>
+                      <span>{participation?.notVoted || 0} Tidak Memilih</span>
                     </div>
                   </div>
                 </CardContent>
@@ -673,13 +786,13 @@ export default function ElectionResultPage() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Faculty Participation</CardTitle>
-                  <CardDescription>Participation rate by faculty</CardDescription>
+                  <CardTitle>Partisipasi Fakultas</CardTitle>
+                  <CardDescription>Tingkat partisipasi berdasarkan fakultas</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <ScrollArea className="h-72 pr-4">
-                    {Object.entries(participationByFaculty).map(([faculty, count]) => {
-                      const totalInFaculty = totalFacultyCount(faculty);
+                    {Object.entries(participationByFaculty || {}).map(([faculty, count]) => {
+                      const totalInFaculty = participation?.totalVoters || 0;
                       const percentage = totalInFaculty > 0 
                         ? ((count / totalInFaculty) * 100).toFixed(2) 
                         : "0.00";
@@ -702,18 +815,44 @@ export default function ElectionResultPage() {
                   </ScrollArea>
                 </CardContent>
               </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Partisipasi Jurusan</CardTitle>
+                  <CardDescription>Tingkat partisipasi berdasarkan jurusan</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ScrollArea className="h-72 pr-4">
+                    {Object.entries(participationByMajor || {}).map(([major, count]) => {
+                      const totalInMajor = participation?.totalVoters || 0;
+                      const percentage = totalInMajor > 0 
+                        ? ((count / totalInMajor) * 100).toFixed(2) 
+                        : "0.00";
+                      
+                      return (
+                        <div key={major} className="mb-4">
+                          <div className="flex items-center justify-between text-sm">
+                            <span>{major}</span>
+                            <span className="font-medium">{percentage}%</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Progress value={Number(percentage)} className="h-2" />
+                            <span className="text-xs text-muted-foreground">
+                              {count}/{totalInMajor}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </ScrollArea>
+                </CardContent>
+              </Card>
             </div>
           </TabsContent>
         </Tabs>
       </div>
     </div>
   );
-}
-
-// Helper function to determine total voters in a faculty (mock implementation)
-function totalFacultyCount(faculty) {
-  // This should be replaced with actual data from participationByFaculty
-  return Math.floor(Math.random() * 100) + 50; // Mock total between 50-150
 }
 
 // Loading Skeleton Component
@@ -754,4 +893,4 @@ function ResultsLoadingSkeleton() {
       </div>
     </div>
   );
-} 
+}

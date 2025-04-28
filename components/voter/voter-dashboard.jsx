@@ -139,7 +139,7 @@ export default function VoterDashboard() {
       }
 
       // Redirect to voting page
-      window.location.href = `/voter/vote/${currentElection.id}`;
+      window.location.href = `/voter/vote/`;
     } catch (error) {
       console.error("Error navigating to vote page:", error);
       toast.error("Kesalahan", {
@@ -251,21 +251,21 @@ export default function VoterDashboard() {
                       <CardDescription className="text-base mt-1 ">
                         Selamat Datang di Platform SiPilih. Anda mengikuti pemilu untuk:
                         <br />
-                        <span className="font-bold text-primary">{currentElection?.title || "No active election"}</span>
+                        <span className="font-bold text-primary">{currentElection?.title || "Tidak ada pemilu aktif"}</span>
                       </CardDescription>
                     </div>
-                    <Badge className="px-3 py-1 text-sm flex items-center gap-1 self-start border bg-blue-500/10 text-blue-600">
+                    <Badge className="px-3 py-1 text-sm flex items-center gap-1 self-start border border-primary">
                       {hasVoted ? (
                         <>
-                          <CheckCircle className="h-3.5 w-3.5 mr-1" /> Voted
+                          <CheckCircle className="h-3.5 w-3.5 mr-1" /> Sudah Memilih
                         </>
                       ) : currentElection?.status === "ongoing" ? (
                         <>
-                          <Clock className="h-3.5 w-3.5 mr-1" /> Ongoing
+                          <Clock className="h-3.5 w-3.5 mr-1" /> Sedang Berlangsung
                         </>
                       ) : (
                         <>
-                          <Clock className="h-3.5 w-3.5 mr-1" /> Pending
+                          <Clock className="h-3.5 w-3.5 mr-1" /> Menunggu
                         </>
                       )}
                     </Badge>
@@ -273,14 +273,14 @@ export default function VoterDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-col sm:flex-row gap-4 mt-2">
-                    <div className="flex-1 rounded-xl p-4 border border-blue-500/20 bg-gradient-to-br from-blue-500/5 to-purple-500/5 hover:from-blue-500/10 hover:to-purple-500/10 transition-all duration-300">
+                    <div className="flex-1 rounded-xl p-4 border transition-all duration-300">
                       <div className="flex items-center mb-2">
                         <Vote className="h-5 w-5 mr-2 text-blue-600" />
-                        <h3 className="font-medium ">Election Status</h3>
+                        <h3 className="font-medium ">Status Pemilihan</h3>
                       </div>
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
-                          <span className="">Partisipasi</span>
+                          <span className="">Tingkat Partisipasi</span>
                           <span className="font-medium ">
                             {Math.round(participationRate)}%
                           </span>
@@ -294,7 +294,7 @@ export default function VoterDashboard() {
                           />
                         </div>
                         <p className="text-xs ">
-                          {votedCount} out of {totalVoters} voters
+                          {votedCount} dari {totalVoters} pemilih
                         </p>
                       </div>
                     </div>
@@ -347,22 +347,18 @@ export default function VoterDashboard() {
                         <div className="w-12 h-12 rounded-full flex items-center justify-center mb-2 bg-emerald-500/20">
                           <CheckCheck className="h-6 w-6 text-emerald-400" />
                         </div>
-                        <p className="font-medium mb-3 text-emerald-600">
+                        <p className="font-medium mb-2 text-emerald-600">
                           Suara Anda telah direkam secara aman
                         </p>
-                        <div className="flex items-center gap-2 w-full">
-                          <div className="text-xs font-mono p-2 rounded overflow-hidden overflow-ellipsis flex-1 bg-gray-100">
-                            {voterStatus?.voteHash}
-                          </div>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={copyToClipboard}
-                            className="flex-shrink-0 transition-all duration-300 border-gray-300"
-                          >
-                            <Copy className="h-4 w-4" />
-                          </Button>
-                        </div>
+                        <Button
+                          onClick={() => router.push(`/voter/verify`)}
+                          variant="outline"
+                          className="w-full py-2 rounded-lg font-medium transition-all duration-300 cursor-pointer border-emerald-300 text-emerald-600"
+                        >
+                          <span className="flex items-center gap-2">
+                            <Shield className="h-4 w-4" /> Verifikasi Suara Anda
+                          </span>
+                        </Button>
                       </div>
                     </div>
                   )}
@@ -454,10 +450,10 @@ export default function VoterDashboard() {
                                 <span className="text-muted-foreground flex items-center gap-1">
                                   <Vote className="h-3 w-3" /> Suara
                                 </span>
-                                <span className="font-medium">{candidate.voteCount || 0} ({candidate.persentaseSuara || "0.0"}%)</span>
+                                <span className="font-medium">{candidate.voteCount || 0} ({candidate.votePercentage || "0.0"}%)</span>
                               </div>
                               <Progress 
-                                value={parseFloat(candidate.persentaseSuara) || 0} 
+                                value={parseFloat(candidate.votePercentage) || 0} 
                                 className={cn(
                                   "h-1.5 rounded-full",
                                   (candidate.peringkat === 1 || index === 0) ? "bg-primary/20" : "bg-primary/10"
@@ -513,6 +509,7 @@ export default function VoterDashboard() {
                 <Button
                   variant="outline"
                   className="w-full flex items-center justify-center gap-2 py-5 border-gray-300 hover:border-blue-500/50 bg-white/50 hover:bg-gradient-to-r hover:from-blue-500/10 hover:to-purple-500/10"
+                  onClick={() => router.push('/voter/verify')}
                 >
                   <Search className="h-4 w-4" /> Verifikasi Suara Anda
                 </Button>
@@ -542,6 +539,7 @@ export default function VoterDashboard() {
                 <Button
                   variant="outline"
                   className="w-full flex items-center justify-center gap-2 py-5 border-gray-300 hover:border-emerald-500/50 bg-white/50 hover:bg-gradient-to-r hover:from-emerald-500/10 hover:to-teal-500/10"
+                  onClick={() => router.push('/voter/result')}
                 >
                   <BarChart3 className="h-4 w-4" /> Lihat Hasil Langsung
                 </Button>

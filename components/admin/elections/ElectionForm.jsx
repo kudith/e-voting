@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { electionSchema } from "@/validations/ElectionSchme";
@@ -22,25 +22,59 @@ import {
   FileText,
   Calendar,
   CheckCircle2,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
 
 // Fungsi untuk memformat tanggal ke format yyyy-mm-dd
 const formatDate = (dateString) => {
   if (!dateString) return "";
-  const date = new Date(dateString);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  try {
+    return format(new Date(dateString), "yyyy-MM-dd");
+  } catch (error) {
+    return dateString;
+  }
 };
 
-export default function ElectionForm({ isOpen, onClose, onSave, election }) {
+// Fungsi untuk memformat waktu ke format HH:mm
+const formatTime = (dateString) => {
+  if (!dateString) return "";
+  try {
+    return format(new Date(dateString), "HH:mm");
+  } catch (error) {
+    return "";
+  }
+};
+
+// Fungsi untuk menggabungkan tanggal dan waktu
+const combineDateAndTime = (dateString, timeString) => {
+  if (!dateString) return "";
+  try {
+    const date = new Date(dateString);
+    if (timeString) {
+      const [hours, minutes] = timeString.split(":");
+      date.setHours(parseInt(hours, 10));
+      date.setMinutes(parseInt(minutes, 10));
+    }
+    return date.toISOString();
+  } catch (error) {
+    return dateString;
+  }
+};
+
+export default function ElectionForm({ isOpen, onClose, onSave, election, isSubmitting }) {
+  const [startTime, setStartTime] = useState("08:00");
+  const [endTime, setEndTime] = useState("17:00");
+
   const {
     register,
     handleSubmit,
     setValue,
     reset,
+    watch,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(electionSchema),
@@ -49,43 +83,56 @@ export default function ElectionForm({ isOpen, onClose, onSave, election }) {
       description: "",
       startDate: "",
       endDate: "",
-      status: "active",
+      status: "ongoing",
     },
   });
-const handleSaveElection = (formData) => {
-  if (selectedElection) {
-    // Edit pemilihan yang ada
-    updateElection({ id: selectedElection.id, ...formData });
-  } else {
-    // Buat pemilihan baru
-    createElection(formData);
-  }
-};
-useEffect(() => {
-  if (isOpen) {
-    if (election) {
-      // Isi form dengan data pemilihan yang dipilih untuk diedit
-      reset({
-        title: election.title || "",
-        description: election.description || "",
-        startDate: formatDate(election.startDate) || "", // Format tanggal mulai
-        endDate: formatDate(election.endDate) || "", // Format tanggal selesai
-        status: election.status || "active", // Gunakan status dari election
-      });
-    } else {
-      // Kosongkan form untuk membuat pemilihan baru
-      reset({
-        title: "",
-        description: "",
-        startDate: "",
-        endDate: "",
-        status: "active",
-      });
+
+  const startDate = watch("startDate");
+  const endDate = watch("endDate");
+
+  useEffect(() => {
+    if (isOpen) {
+      if (election) {
+        // Isi form dengan data pemilihan yang dipilih untuk diedit
+        const formattedStartDate = formatDate(election.startDate);
+        const formattedEndDate = formatDate(election.endDate);
+        const formattedStartTime = formatTime(election.startDate);
+        const formattedEndTime = formatTime(election.endDate);
+        
+        reset({
+          title: election.title || "",
+          description: election.description || "",
+          startDate: formattedStartDate || "",
+          endDate: formattedEndDate || "",
+          status: election.status || "ongoing",
+        });
+        
+        setStartTime(formattedStartTime || "08:00");
+        setEndTime(formattedEndTime || "17:00");
+      } else {
+        // Kosongkan form untuk membuat pemilihan baru
+        reset({
+          title: "",
+          description: "",
+          startDate: "",
+          endDate: "",
+          status: "ongoing",
+        });
+        
+        setStartTime("08:00");
+        setEndTime("17:00");
+      }
     }
-  }
-}, [isOpen, election, reset]);
+  }, [isOpen, election, reset]);
+
   const onSubmit = (formData) => {
-    onSave(formData);
+    // Gabungkan tanggal dan waktu sebelum menyimpan
+    const combinedData = {
+      ...formData,
+      startDate: combineDateAndTime(formData.startDate, startTime),
+      endDate: combineDateAndTime(formData.endDate, endTime),
+    };
+    onSave(combinedData);
   };
 
   return (
@@ -172,18 +219,31 @@ useEffect(() => {
                     className="flex items-center gap-1.5"
                   >
                     <Calendar className="h-4 w-4 text-muted-foreground" />
-                    Tanggal Mulai <span className="text-destructive">*</span>
+                    Tanggal & Waktu Mulai <span className="text-destructive">*</span>
                   </Label>
-                  <Input
-                    id="startDate"
-                    type="date"
-                    {...register("startDate")}
-                    className={cn(
-                      "transition-colors",
-                      errors.startDate &&
-                        "border-destructive focus-visible:ring-destructive"
-                    )}
-                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input
+                      id="startDate"
+                      type="date"
+                      {...register("startDate")}
+                      className={cn(
+                        "transition-colors",
+                        errors.startDate &&
+                          "border-destructive focus-visible:ring-destructive"
+                      )}
+                    />
+                    <Input
+                      id="startTime"
+                      type="time"
+                      value={startTime}
+                      onChange={(e) => setStartTime(e.target.value)}
+                      className={cn(
+                        "transition-colors",
+                        errors.startDate &&
+                          "border-destructive focus-visible:ring-destructive"
+                      )}
+                    />
+                  </div>
                   {errors.startDate && (
                     <p className="text-destructive text-xs flex items-center gap-1">
                       <XCircle className="h-3 w-3" />
@@ -199,18 +259,31 @@ useEffect(() => {
                     className="flex items-center gap-1.5"
                   >
                     <Calendar className="h-4 w-4 text-muted-foreground" />
-                    Tanggal Selesai <span className="text-destructive">*</span>
+                    Tanggal & Waktu Selesai <span className="text-destructive">*</span>
                   </Label>
-                  <Input
-                    id="endDate"
-                    type="date"
-                    {...register("endDate")}
-                    className={cn(
-                      "transition-colors",
-                      errors.endDate &&
-                        "border-destructive focus-visible:ring-destructive"
-                    )}
-                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input
+                      id="endDate"
+                      type="date"
+                      {...register("endDate")}
+                      className={cn(
+                        "transition-colors",
+                        errors.endDate &&
+                          "border-destructive focus-visible:ring-destructive"
+                      )}
+                    />
+                    <Input
+                      id="endTime"
+                      type="time"
+                      value={endTime}
+                      onChange={(e) => setEndTime(e.target.value)}
+                      className={cn(
+                        "transition-colors",
+                        errors.endDate &&
+                          "border-destructive focus-visible:ring-destructive"
+                      )}
+                    />
+                  </div>
                   {errors.endDate && (
                     <p className="text-destructive text-xs flex items-center gap-1">
                       <XCircle className="h-3 w-3" />
@@ -218,6 +291,35 @@ useEffect(() => {
                     </p>
                   )}
                 </div>
+                
+                {/* Validasi visual untuk pengingat durasi */}
+                {startDate && endDate && startTime && endTime && (
+                  <div className="md:col-span-2">
+                    <div className={cn(
+                      "text-xs p-3 rounded-md",
+                      new Date(`${endDate}T${endTime}`) <= new Date(`${startDate}T${startTime}`) 
+                        ? "bg-red-50 text-red-700 border border-red-200"
+                        : "bg-blue-50 text-blue-700 border border-blue-200"
+                    )}>
+                      <div className="flex items-center gap-1.5">
+                        {new Date(`${endDate}T${endTime}`) <= new Date(`${startDate}T${startTime}`) ? (
+                          <>
+                            <AlertCircle className="h-4 w-4" />
+                            <span className="font-medium">Perhatian:</span> Waktu selesai harus setelah waktu mulai
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle2 className="h-4 w-4" />
+                            <span className="font-medium">Durasi Pemilihan:</span> 
+                            {formatDate(startDate) === formatDate(endDate) 
+                              ? `${formatDate(startDate)}, ${startTime} - ${endTime} WIB (${Math.round((new Date(`${endDate}T${endTime}`) - new Date(`${startDate}T${startTime}`)) / (1000 * 60 * 60))} jam)`
+                              : `${formatDate(startDate)} ${startTime} WIB - ${formatDate(endDate)} ${endTime} WIB (${Math.round((new Date(`${endDate}T${endTime}`) - new Date(`${startDate}T${startTime}`)) / (1000 * 60 * 60 * 24))} hari)`}
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -226,11 +328,25 @@ useEffect(() => {
                 variant="outline"
                 onClick={onClose}
                 className="w-full sm:w-auto"
+                disabled={isSubmitting}
               >
                 Batal
               </Button>
-              <Button type="submit" className="w-full sm:w-auto">
-                {election ? "Perbarui Pemilihan" : "Tambah Pemilihan"}
+              <Button 
+                type="submit" 
+                className="w-full sm:w-auto"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {election ? "Memperbarui..." : "Menambahkan..."}
+                  </>
+                ) : (
+                  <>
+                    {election ? "Perbarui Pemilihan" : "Tambah Pemilihan"}
+                  </>
+                )}
               </Button>
             </DialogFooter>
           </form>

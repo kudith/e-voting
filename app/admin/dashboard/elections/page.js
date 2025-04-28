@@ -31,12 +31,19 @@ export default function ElectionsPage() {
   });
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [startDateFilter, setStartDateFilter] = useState("");
+  const [endDateFilter, setEndDateFilter] = useState("");
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false); // New state for bulk delete
+  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
   const [selectedElection, setSelectedElection] = useState(null);
   const [selectedElections, setSelectedElections] = useState([]);
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [totalElections, setTotalElections] = useState(0);
 
   useEffect(() => {
     const fetchElections = async () => {
@@ -46,6 +53,7 @@ export default function ElectionsPage() {
         if (!res.ok) throw new Error("Failed to fetch elections");
         const data = await res.json();
         setElections(data);
+        setTotalElections(data.length);
       } catch (err) {
         console.error("Error fetching elections:", err);
         setError("Failed to load elections.");
@@ -70,8 +78,32 @@ export default function ElectionsPage() {
       );
     }
 
+    if (startDateFilter) {
+      const startFilterDate = new Date(startDateFilter);
+      startFilterDate.setHours(0, 0, 0, 0); // Start of day
+      filtered = filtered.filter(
+        (e) => new Date(e.startDate) >= startFilterDate
+      );
+    }
+
+    if (endDateFilter) {
+      const endFilterDate = new Date(endDateFilter);
+      endFilterDate.setHours(23, 59, 59, 999); // End of day
+      filtered = filtered.filter(
+        (e) => new Date(e.endDate) <= endFilterDate
+      );
+    }
+
     if (sortConfig.key) {
       filtered.sort((a, b) => {
+        // For date sorting
+        if (sortConfig.key === "startDate" || sortConfig.key === "endDate") {
+          return sortConfig.direction === "ascending"
+            ? new Date(a[sortConfig.key]) - new Date(b[sortConfig.key])
+            : new Date(b[sortConfig.key]) - new Date(a[sortConfig.key]);
+        }
+
+        // For text sorting
         const aVal = a[sortConfig.key] || "";
         const bVal = b[sortConfig.key] || "";
 
@@ -91,6 +123,10 @@ export default function ElectionsPage() {
   };
 
   const filteredElections = getFilteredAndSortedElections();
+  const totalPages = Math.ceil(filteredElections.length / rowsPerPage);
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const endIndex = startIndex + rowsPerPage;
+  const paginatedElections = filteredElections.slice(startIndex, endIndex);
 
   const requestSort = (key) => {
     const direction =
@@ -138,30 +174,25 @@ export default function ElectionsPage() {
     }
   };
 
- const deleteElection = async (id) => {
-   try {
-     console.log("Deleting election with ID:", id); // Debugging log
+  const deleteElection = async (id) => {
+    try {
+      const res = await fetch("/api/election/deleteElection", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: [id] }),
+      });
 
-     const res = await fetch("/api/election/deleteElection", {
-       method: "DELETE",
-       headers: { "Content-Type": "application/json" },
-       body: JSON.stringify({ ids: [id] }), // Kirim ID sebagai array
-     });
+      if (!res.ok) throw new Error("Failed to delete election");
 
-     if (!res.ok) {
-       const errorData = await res.json();
-       throw new Error(errorData.error || "Failed to delete election");
-     }
-
-     toast.success("Election deleted successfully.");
-     setIsDeleteDialogOpen(false);
-     setSelectedElection(null);
-     setDataChanged((prev) => !prev);
-   } catch (err) {
-     console.error("Error deleting election:", err);
-     toast.error(err.message || "Failed to delete election. Please try again.");
-   }
- };
+      toast.success("Election deleted successfully.");
+      setIsDeleteDialogOpen(false);
+      setSelectedElection(null);
+      setDataChanged((prev) => !prev);
+    } catch (err) {
+      console.error("Error deleting election:", err);
+      toast.error("Failed to delete election. Please try again.");
+    }
+  };
 
   const bulkDeleteElections = async () => {
     try {
@@ -191,6 +222,15 @@ export default function ElectionsPage() {
     }
   };
 
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  const handleRowsPerPageChange = (value) => {
+    setRowsPerPage(value);
+    setCurrentPage(1);
+  };
+
   return (
     <div className="container mx-auto py-8 px-4">
       <motion.div
@@ -214,11 +254,21 @@ export default function ElectionsPage() {
                 setSearchQuery={setSearchQuery}
                 statusFilter={statusFilter}
                 setStatusFilter={setStatusFilter}
+                startDateFilter={startDateFilter}
+                setStartDateFilter={setStartDateFilter}
+                endDateFilter={endDateFilter}
+                setEndDateFilter={setEndDateFilter}
+                clearFilters={() => {
+                  setSearchQuery("");
+                  setStatusFilter("all");
+                  setStartDateFilter("");
+                  setEndDateFilter("");
+                }}
               />
               <Button
                 onClick={() => {
-                  setSelectedElection(null); // Kosongkan data pemilihan yang dipilih
-                  setIsModalOpen(true); // Buka form
+                  setSelectedElection(null);
+                  setIsModalOpen(true);
                 }}
                 className="gap-1"
               >
@@ -243,7 +293,7 @@ export default function ElectionsPage() {
             )}
 
             <ElectionTable
-              elections={filteredElections}
+              elections={paginatedElections}
               isLoading={isLoading}
               selectedElections={selectedElections}
               onSelectElection={(id, checked) =>
@@ -253,12 +303,12 @@ export default function ElectionsPage() {
               }
               onSelectAll={(checked) =>
                 setSelectedElections(
-                  checked ? filteredElections.map((e) => e.id) : []
+                  checked ? paginatedElections.map((e) => e.id) : []
                 )
               }
               onEdit={(election) => {
-                setSelectedElection(election); // Atur data pemilihan yang dipilih
-                setIsModalOpen(true); // Buka form
+                setSelectedElection(election);
+                setIsModalOpen(true);
               }}
               onDelete={(election) => {
                 setSelectedElection(election);
@@ -267,6 +317,12 @@ export default function ElectionsPage() {
               sortConfig={sortConfig}
               requestSort={requestSort}
               error={error}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={handleRowsPerPageChange}
+              totalElections={filteredElections.length}
             />
           </CardContent>
         </Card>
@@ -278,7 +334,7 @@ export default function ElectionsPage() {
             setSelectedElection(null);
           }}
           onSave={handleSaveElection}
-          election={selectedElection} // Kirim data pemilihan yang dipilih
+          election={selectedElection}
         />
 
         <DeleteConfirmation

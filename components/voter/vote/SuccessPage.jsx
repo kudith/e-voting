@@ -1,87 +1,132 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Copy, Search } from "lucide-react";
+import { Copy, Search, Home, CheckCircle, AlertTriangle, ArrowLeft, VerifiedIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
 export function SuccessPage({ voteHash }) {
   const router = useRouter();
+  const [copied, setCopied] = useState(false);
 
   const handleCopyHash = () => {
     navigator.clipboard.writeText(voteHash);
     toast.success("Hash berhasil disalin ke clipboard");
+    setCopied(true);
+
+    // Reset copied state after 3 seconds
+    setTimeout(() => setCopied(false), 3000);
   };
 
   const handleVerifyVote = () => {
     router.push("/voter/verify");
   };
 
+  const handleBackToHome = () => {
+    router.push("/");
+  };
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 py-12 px-4 sm:px-6 lg:px-8"
-    >
-      <div className="max-w-2xl w-full text-center">
-        <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-          className="w-20 h-20 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-6"
-        >
-          <svg
-            className="w-10 h-10 text-green-600 dark:text-green-400"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M5 13l4 4L19 7"
-            />
-          </svg>
-        </motion.div>
-
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-          Terima kasih! Suara Anda telah dikirim.
-        </h1>
-
-        <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">
-          Berikut adalah hash unik untuk verifikasi suara Anda:
-        </p>
-
-        <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 mb-8">
-          <div className="flex items-center justify-between">
-            <code className="text-sm text-gray-800 dark:text-gray-200 break-all">
-              {voteHash}
-            </code>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleCopyHash}
-              className="ml-2"
-            >
-              <Copy className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-
-        <div className="flex justify-center gap-4">
+    <div className="min-h-screen px-4 py-8 sm:px-6 lg:px-8">
+      {/* Navigation Bar at Top */}
+      <div className="mb-6 flex items-center justify-between">
           <Button
-            variant="outline"
-            onClick={handleVerifyVote}
-            className="flex items-center gap-2"
+            variant="ghost"
+            size="sm"
+            onClick={() => router.push("/voter/dashboard")}
+            className="gap-2 text-muted-foreground hover:text-foreground transition-colors"
           >
-            <Search className="w-4 h-4" />
-            Verifikasi Suara Saya
+            <ArrowLeft className="h-4 w-4" />
+            <span>Kembali</span>
+          </Button>
+
+          <Button
+          size="sm"
+          onClick={handleBackToHome}
+          className="gap-2 transition-colors cursor-pointer"
+          >
+            <VerifiedIcon className="h-4 w-4" />
+            <span>Verifikasi Suara</span>
           </Button>
         </div>
+      <div className="max-w-2xl mx-auto mb-8">
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Card className="shadow-lg border-primary/30">
+            <CardHeader className="pb-0 pt-6 text-center">
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                className="w-20 h-20 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-6"
+              >
+                <CheckCircle className="w-10 h-10 text-green-600 dark:text-green-400" />
+              </motion.div>
+
+              <h1 className="text-3xl font-bold mb-2 text-green-700 dark:text-green-400">
+                Suara Berhasil Tercatat
+              </h1>
+              <p className="text-muted-foreground">
+                Terima kasih telah berpartisipasi dalam pemilihan ini
+              </p>
+            </CardHeader>
+
+            <CardContent className="space-y-6 pt-6 pb-6">
+              <Alert
+                variant="destructive"
+                className="mb-6 border border-destructive/30 bg-destructive/10"
+              >
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Penting!</AlertTitle>
+                <AlertDescription className="text-sm">
+                  Mohon salin dan simpan hash verifikasi suara anda. Hash ini bersifat unik dan tidak dapat diakses kembali setelah meninggalkan halaman ini. 
+                  Tanpa hash ini, anda tidak bisa memverifikasi suara anda.
+                </AlertDescription>
+              </Alert>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-medium">Hash Verifikasi Suara:</h3>
+                  <Button
+                    variant={copied ? "secondary" : "outline"}
+                    size="sm"
+                    onClick={handleCopyHash}
+                    className="flex items-center gap-2 transition-all cursor-pointer"
+                  >
+                    <Copy className="w-4 h-4" />
+                    {copied ? "Disalin!" : "Salin Hash"}
+                  </Button>
+                </div>
+
+                <div className="bg-muted rounded-lg p-4 relative">
+                  <code className="text-sm break-all text-muted-foreground block">
+                    {voteHash}
+                  </code>
+                </div>
+                <Separator className="my-4" />
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleVerifyVote}
+                  className="w-full flex items-center gap-2 cursor-pointer"
+                >
+                  <Search className="w-4 h-4" />
+                  Verifikasi Suara
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
-    </motion.div>
+    </div>
   );
-} 
+}

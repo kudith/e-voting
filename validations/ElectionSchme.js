@@ -11,18 +11,21 @@ const descriptionSchema = z
   .min(10, "Description must be at least 10 characters")
   .max(500, "Description must be at most 500 characters");
 
+// Update to accept any valid date string format
 const startDateSchema = z
   .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, "Start date must be in YYYY-MM-DD format")
-  .refine((date) => !isNaN(new Date(date).getTime()), "Start date is invalid");
+  .min(1, "Tanggal mulai wajib diisi")
+  .refine((date) => !isNaN(new Date(date).getTime()), "Tanggal mulai tidak valid");
 
+// Update to accept any valid date string format
 const endDateSchema = z
   .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, "End date must be in YYYY-MM-DD format")
-  .refine((date) => !isNaN(new Date(date).getTime()), "End date is invalid");
+  .min(1, "Tanggal selesai wajib diisi")
+  .refine((date) => !isNaN(new Date(date).getTime()), "Tanggal selesai tidak valid");
 
-const statusSchema = z.enum(["active", "inactive"], {
-  errorMap: () => ({ message: "Status must be either 'active' or 'inactive'" }),
+// Updated to match database values
+const statusSchema = z.enum(["ongoing", "completed", "upcoming"], {
+  errorMap: () => ({ message: "Status harus 'ongoing', 'completed', atau 'upcoming'" }),
 });
 
 export const electionSchema = z
@@ -31,9 +34,9 @@ export const electionSchema = z
     description: descriptionSchema,
     startDate: startDateSchema,
     endDate: endDateSchema,
-    status: statusSchema, // Tambahkan validasi status
+    status: statusSchema,
   })
   .refine((data) => new Date(data.endDate) >= new Date(data.startDate), {
-    message: "End date must be after or equal to the start date",
+    message: "Tanggal & waktu selesai harus setelah tanggal & waktu mulai",
     path: ["endDate"],
   });

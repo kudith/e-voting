@@ -4,14 +4,19 @@ import { hybridDecrypt } from "@/lib/encryption";
 
 // Endpoint: /api/election/results/[electionId]
 export async function GET(request, { params }) {
-  // Extract electionId directly from params object (new approach)
-  const electionId = params?.electionId;
+  // Extract electionId directly from params object
+  const { electionId } = params;
 
   if (!electionId) {
-    return NextResponse.json({ error: "Missing electionId parameter" }, { status: 400 });
+    return NextResponse.json({ 
+      success: false, 
+      error: "Missing electionId parameter" 
+    }, { status: 400 });
   }
 
   try {
+    console.log(`Fetching results for election ID: ${electionId}`);
+    
     const election = await prisma.election.findUnique({
       where: { id: electionId },
       include: {
@@ -40,7 +45,10 @@ export async function GET(request, { params }) {
     });
 
     if (!election) {
-      return NextResponse.json({ error: "Election not found" }, { status: 404 });
+      return NextResponse.json({ 
+        success: false, 
+        error: "Election not found" 
+      }, { status: 404 });
     }
 
     // Build map of voterId to faculty/major
@@ -75,6 +83,7 @@ export async function GET(request, { params }) {
       candidateFacultyStats[candidate.id] = {};
       candidateMajorStats[candidate.id] = {};
     }
+    
     for (const v of election.votes) {
       try {
         const decryptedData = hybridDecrypt(
@@ -96,8 +105,10 @@ export async function GET(request, { params }) {
         }
       } catch (e) {
         // skip error
+        console.log("Error decrypting vote:", e.message);
       }
     }
+    
     // Hitung persentase
     for (const candidateId in candidateFacultyStats) {
       for (const faculty in candidateFacultyStats[candidateId]) {
@@ -108,6 +119,7 @@ export async function GET(request, { params }) {
         };
       }
     }
+    
     for (const candidateId in candidateMajorStats) {
       for (const major in candidateMajorStats[candidateId]) {
         const count = candidateMajorStats[candidateId][major];
@@ -124,6 +136,7 @@ export async function GET(request, { params }) {
     const voteChart = sortedCandidates.map((c) => ({
       id: c.id,
       name: c.name,
+      photo: c.photo,
       voteCount: c.voteCount,
       percentage: election.totalVotes > 0 ? (c.voteCount / election.totalVotes * 100).toFixed(2) : "0.00",
     }));
@@ -132,6 +145,7 @@ export async function GET(request, { params }) {
     let majorStats = {};
     let voted = 0;
     let notVoted = 0;
+    
     if (election.voterElections && election.voterElections.length > 0) {
       for (const ve of election.voterElections) {
         if (ve.hasVoted) voted++; else notVoted++;
@@ -155,28 +169,47 @@ export async function GET(request, { params }) {
       timeline.sort((a, b) => a.date.localeCompare(b.date));
     }
 
+    // Map status from database status (ongoing, completed, upcoming) to UI status (ACTIVE, COMPLETED, UPCOMING)
+    let mappedStatus;
+    switch (election.status) {
+      case "ongoing":
+        mappedStatus = "ACTIVE";
+        break;
+      case "completed":
+        mappedStatus = "COMPLETED";
+        break;
+      case "upcoming":
+        mappedStatus = "UPCOMING";
+        break;
+      default:
+        mappedStatus = election.status;
+    }
+
+    const totalVoters = election.voterElections.length;
+    const votedPercentage = totalVoters > 0 ? (voted / totalVoters * 100).toFixed(2) : "0.00";
+
     const result = {
-      election: {
         id: election.id,
         title: election.title,
         description: election.description,
         startDate: election.startDate,
         endDate: election.endDate,
-        status: election.status,
+      status: mappedStatus,
         totalVotes: election.totalVotes,
-      },
       statistics: election.statistics || null,
       candidates: voteChart,
       winner: winner ? {
         id: winner.id,
         name: winner.name,
+        photo: winner.photo,
         voteCount: winner.voteCount,
+        percentage: election.totalVotes > 0 ? (winner.voteCount / election.totalVotes * 100).toFixed(2) : "0.00",
       } : null,
       participation: {
-        totalVoters: election.voterElections.length,
+        totalVoters,
         voted,
         notVoted,
-        percentage: election.voterElections.length > 0 ? (voted / election.voterElections.length * 100).toFixed(2) : "0.00",
+        percentage: votedPercentage,
       },
       participationByFaculty: facultyStats,
       participationByMajor: majorStats,
@@ -185,8 +218,15 @@ export async function GET(request, { params }) {
       candidateMajorStats,
     };
 
-    return NextResponse.json({ success: true, data: result });
+    return NextResponse.json({ 
+      success: true, 
+      data: result 
+    });
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("Error fetching election results:", error);
+    return NextResponse.json({ 
+      success: false, 
+      error: error.message 
+    }, { status: 500 });
   }
 }
