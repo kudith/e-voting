@@ -10,6 +10,18 @@ import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
 
 const fetcher = (url) => fetch(url).then((res) => res.json());
 
+// Predefined positions for decorative particles to prevent hydration errors
+const particlePositions = [
+  { top: 25, left: 15 },
+  { top: 45, left: 25 },
+  { top: 65, left: 10 },
+  { top: 35, left: 80 },
+  { top: 75, left: 50 },
+  { top: 20, left: 70 },
+  { top: 60, left: 90 },
+  { top: 50, left: 40 },
+];
+
 export default function HeroSection() {
   const [currentElectionIndex, setCurrentElectionIndex] = useState(0);
   const [ongoingElections, setOngoingElections] = useState([]);
@@ -137,15 +149,15 @@ export default function HeroSection() {
           }}
         />
 
-        {/* Small decorative particles */}
+        {/* Small decorative particles - Using predefined positions to prevent hydration errors */}
         <div className="absolute inset-0">
-          {[...Array(8)].map((_, i) => (
+          {particlePositions.map((position, i) => (
             <motion.div
               key={i}
               className="absolute w-2 h-2 rounded-full bg-emerald-600/40 dark:bg-emerald-400/40"
               style={{
-                top: `${15 + Math.random() * 70}%`,
-                left: `${5 + Math.random() * 90}%`,
+                top: `${position.top}%`,
+                left: `${position.left}%`,
               }}
               initial={{ opacity: 0, scale: 0 }}
               animate={{
@@ -154,9 +166,9 @@ export default function HeroSection() {
                 y: [0, -30],
               }}
               transition={{
-                duration: 4 + Math.random() * 6,
+                duration: 4 + (i % 5),
                 repeat: Infinity,
-                delay: Math.random() * 5,
+                delay: i * 0.8,
                 ease: "easeInOut",
               }}
             />

@@ -4,6 +4,18 @@ import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, UserCheck, ShieldCheck, Globe } from "lucide-react";
 
+// Predefined positions for decorative particles to prevent hydration errors
+const particlePositions = [
+  { top: 41.17, left: 30.67 },
+  { top: 36.32, left: 34.91 },
+  { top: 21.88, left: 10.72 },
+  { top: 16.12, left: 68.30 },
+  { top: 69.92, left: 32.64 },
+  { top: 69.06, left: 27.06 },
+  { top: 57.19, left: 31.33 },
+  { top: 36.18, left: 74.67 }
+];
+
 export default function AboutDetails() {
   const features = [
     {
@@ -99,24 +111,23 @@ export default function AboutDetails() {
 
         {/* Small decorative particles */}
         <div className="absolute inset-0">
-          {[...Array(8)].map((_, i) => (
+          {particlePositions.map((position, i) => (
             <motion.div
               key={i}
               className="absolute w-2 h-2 rounded-full bg-emerald-500/40 dark:bg-emerald-400/40"
               style={{
-                top: `${15 + Math.random() * 70}%`,
-                left: `${5 + Math.random() * 90}%`,
+                top: `${position.top}%`,
+                left: `${position.left}%`,
               }}
               initial={{ opacity: 0, scale: 0 }}
               animate={{
-                opacity: [0, 0.8, 0],
+                opacity: [0, 0.7, 0],
                 scale: [0, 1, 0],
-                y: [0, -30],
               }}
               transition={{
-                duration: 4 + Math.random() * 6,
+                duration: 4 + (i % 3),
                 repeat: Infinity,
-                delay: Math.random() * 5,
+                delay: i * 0.6,
                 ease: "easeInOut",
               }}
             />

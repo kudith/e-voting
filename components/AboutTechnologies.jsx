@@ -3,6 +3,16 @@
 import { motion } from "framer-motion";
 import { Hash, Lock, Code, ShieldCheck } from "lucide-react";
 
+// Predefined positions for decorative particles to prevent hydration errors
+const particlePositions = [
+  { top: 62.99, left: 83.80 },
+  { top: 30.86, left: 72.62 },
+  { top: 31.01, left: 64.04 },
+  { top: 33.58, left: 79.63 },
+  { top: 26.57, left: 22.37 },
+  { top: 45.04, left: 34.98 }
+];
+
 export default function AboutTechnologies() {
   const technologies = [
     {
@@ -89,26 +99,25 @@ export default function AboutTechnologies() {
           }}
         />
 
-        {/* Small decorative particles */}
+        {/* Small particles with fixed positions */}
         <div className="absolute inset-0">
-          {[...Array(6)].map((_, i) => (
+          {particlePositions.map((position, i) => (
             <motion.div
               key={i}
               className="absolute w-1.5 h-1.5 rounded-full bg-emerald-600/40 dark:bg-emerald-400/60"
               style={{
-                top: `${20 + Math.random() * 60}%`,
-                left: `${10 + Math.random() * 80}%`,
+                top: `${position.top}%`,
+                left: `${position.left}%`,
               }}
               initial={{ opacity: 0, scale: 0 }}
               animate={{
-                opacity: [0, 0.7, 0],
+                opacity: [0, 0.8, 0],
                 scale: [0, 1, 0],
-                y: [0, -25],
               }}
               transition={{
-                duration: 3 + Math.random() * 5,
+                duration: 3 + (i % 4),
                 repeat: Infinity,
-                delay: Math.random() * 5,
+                delay: i * 0.5,
                 ease: "easeInOut",
               }}
             />

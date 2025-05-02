@@ -4,6 +4,15 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { Mail, Phone, MapPin, ArrowRight } from "lucide-react";
 
+// Predefined positions for decorative particles to prevent hydration errors
+const particlePositions = [
+  { top: 34.24, left: 65.48 },
+  { top: 32.01, left: 45.88 },
+  { top: 79.76, left: 12.14 },
+  { top: 72.42, left: 46.31 },
+  { top: 23.11, left: 28.61 }
+];
+
 export default function Footer() {
   return (
     <footer className="relative bg-gradient-to-b from-slate-800 to-slate-900 text-white py-16 overflow-hidden">
@@ -55,26 +64,25 @@ export default function Footer() {
           }}
         />
 
-        {/* Small decorative particles */}
+        {/* Small particles with fixed positions */}
         <div className="absolute inset-0">
-          {[...Array(5)].map((_, i) => (
+          {particlePositions.map((position, i) => (
             <motion.div
               key={i}
               className="absolute w-1.5 h-1.5 rounded-full bg-emerald-400/60"
               style={{
-                top: `${20 + Math.random() * 60}%`,
-                left: `${10 + Math.random() * 80}%`,
+                top: `${position.top}%`,
+                left: `${position.left}%`,
               }}
               initial={{ opacity: 0, scale: 0 }}
               animate={{
-                opacity: [0, 0.7, 0],
+                opacity: [0, 0.8, 0],
                 scale: [0, 1, 0],
-                y: [0, -20],
               }}
               transition={{
-                duration: 3 + Math.random() * 4,
+                duration: 3 + (i % 3),
                 repeat: Infinity,
-                delay: Math.random() * 5,
+                delay: i * 0.6,
                 ease: "easeInOut",
               }}
             />

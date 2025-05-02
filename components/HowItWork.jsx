@@ -10,6 +10,18 @@ import {
   FileText,
 } from "lucide-react";
 
+// Predefined positions for decorative particles to prevent hydration errors
+const particlePositions = [
+  { top: 62.16, left: 13.52 },
+  { top: 23.81, left: 34.50 },
+  { top: 71.75, left: 14.23 },
+  { top: 52.90, left: 67.93 },
+  { top: 22.58, left: 12.23 },
+  { top: 79.82, left: 62.96 },
+  { top: 73.48, left: 47.51 },
+  { top: 41.94, left: 53.89 }
+];
+
 export default function HowItWorks() {
   const processes = [
     {
@@ -131,7 +143,7 @@ export default function HowItWorks() {
           className="absolute bottom-20 -right-32 w-96 h-96 rounded-full bg-gradient-to-l from-emerald-400/30 to-green-500/30 dark:from-emerald-600/20 dark:to-green-600/20 blur-3xl"
           initial={{ opacity: 0 }}
           animate={{
-            opacity: 0.8,
+            opacity: 8,
             y: [0, -15, 0, 15, 0],
           }}
           transition={{
@@ -156,26 +168,25 @@ export default function HowItWorks() {
           }}
         />
 
-        {/* Small decorative particles */}
+        {/* Small decorative particles - Using predefined positions */}
         <div className="absolute inset-0">
-          {[...Array(8)].map((_, i) => (
+          {particlePositions.map((position, i) => (
             <motion.div
               key={i}
               className="absolute w-2 h-2 rounded-full bg-emerald-600/40 dark:bg-emerald-400/40"
               style={{
-                top: `${15 + Math.random() * 70}%`,
-                left: `${5 + Math.random() * 90}%`,
+                top: `${position.top}%`,
+                left: `${position.left}%`,
               }}
               initial={{ opacity: 0, scale: 0 }}
               animate={{
                 opacity: [0, 0.8, 0],
                 scale: [0, 1, 0],
-                y: [0, -30],
               }}
               transition={{
-                duration: 4 + Math.random() * 6,
+                duration: 4 + (i % 5),
                 repeat: Infinity,
-                delay: Math.random() * 5,
+                delay: i * 0.7,
                 ease: "easeInOut",
               }}
             />

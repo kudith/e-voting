@@ -4,6 +4,18 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Lock, ClipboardCheck, CheckCircle, Eye, BarChart } from "lucide-react";
 
+// Predefined positions for decorative particles to prevent hydration errors
+const particlePositions = [
+  { top: 76.77, left: 21.17 },
+  { top: 57.05, left: 77.55 },
+  { top: 49.75, left: 92.49 },
+  { top: 54.27, left: 94.66 },
+  { top: 80.85, left: 66.31 },
+  { top: 33.37, left: 89.94 },
+  { top: 38.45, left: 55.52 },
+  { top: 49.44, left: 43.69 }
+];
+
 export default function HowToVotePage() {
   const steps = [
     {
@@ -180,26 +192,25 @@ export default function HowToVotePage() {
           }}
         />
 
-        {/* Small decorative particles */}
+        {/* Small decorative particles - Using predefined positions */}
         <div className="absolute inset-0">
-          {[...Array(8)].map((_, i) => (
+          {particlePositions.map((position, i) => (
             <motion.div
               key={i}
               className="absolute w-2 h-2 rounded-full bg-emerald-600/40 dark:bg-emerald-400/40"
               style={{
-                top: `${15 + Math.random() * 70}%`,
-                left: `${5 + Math.random() * 90}%`,
+                top: `${position.top}%`,
+                left: `${position.left}%`,
               }}
               initial={{ opacity: 0, scale: 0 }}
               animate={{
                 opacity: [0, 0.8, 0],
                 scale: [0, 1, 0],
-                y: [0, -30],
               }}
               transition={{
-                duration: 4 + Math.random() * 6,
+                duration: 4 + (i % 4),
                 repeat: Infinity,
-                delay: Math.random() * 5,
+                delay: i * 0.7,
                 ease: "easeInOut",
               }}
             />
