@@ -86,7 +86,7 @@ model Candidate {
 // Social media links for candidates
 model SocialMedia {
   id          String    @id @default(auto()) @map("_id") @db.ObjectId
-  candidateId String    @unique @db.ObjectId
+  candidateId String    @unique @db.ObjectId // Tambahkan @unique
   candidate   Candidate @relation(fields: [candidateId], references: [id])
   twitter     String?
   facebook    String?

@@ -2,17 +2,25 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { 
-  BarChart, 
-  Activity, 
-  Users, 
+import {
+  BarChart,
+  Activity,
+  Users,
   Vote,
-  Calendar, 
+  Calendar,
   CheckCircle2,
   Clock,
-  TrendingUp
+  TrendingUp,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import Link from "next/link";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardFooter,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -35,7 +43,7 @@ export default function AdminDashboardPage() {
     participationRate: 0,
     totalCandidates: 0,
     recentActivity: [],
-    votingTrend: []
+    votingTrend: [],
   });
   const [activeTab, setActiveTab] = useState("overview");
   const [error, setError] = useState(null);
@@ -44,21 +52,21 @@ export default function AdminDashboardPage() {
     const fetchDashboardData = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch('/api/admin/dashboard/stats');
-        
+        const response = await fetch("/api/admin/dashboard/stats");
+
         if (!response.ok) {
-          throw new Error('Failed to fetch dashboard data');
+          throw new Error("Failed to fetch dashboard data");
         }
-        
+
         const data = await response.json();
-        
+
         if (data.success) {
           setDashboardStats(data.data);
         } else {
-          throw new Error(data.error || 'Unknown error');
+          throw new Error(data.error || "Unknown error");
         }
       } catch (error) {
-        console.error('Error fetching dashboard data:', error);
+        console.error("Error fetching dashboard data:", error);
         setError(error.message);
       } finally {
         setIsLoading(false);
@@ -67,100 +75,15 @@ export default function AdminDashboardPage() {
 
     fetchDashboardData();
   }, []);
-  
-  // Fallback to fetch from Results API if dashboard endpoint is not implemented
-  useEffect(() => {
-    if (error?.includes('Failed to fetch')) {
-      const fetchFromResultsAPI = async () => {
-        try {
-          const response = await fetch('/api/election/results/getAllResults');
-          
-          if (!response.ok) {
-            throw new Error('Failed to fetch from results API');
-          }
-          
-          const result = await response.json();
-          
-          if (result.success) {
-            const { data } = result;
-            
-            // Calculate dashboard stats from results data
-            const totalElections = data.length;
-            const activeElections = data.filter(election => election.status === "ACTIVE").length;
-            const completedElections = data.filter(election => election.status === "COMPLETED").length;
-            const upcomingElections = data.filter(election => election.status === "UPCOMING").length;
-            
-            // Calculate overall statistics
-            const totalVotes = data.reduce((sum, election) => sum + (election.totalVotes || 0), 0);
-            const totalCandidates = data.reduce((sum, election) => sum + (election.candidates?.length || 0), 0);
-            
-            // Calculate total voters and participation
-            let totalVoters = 0;
-            let votedVoters = 0;
-            
-            data.forEach(election => {
-              if (election.participation) {
-                totalVoters += election.participation.totalVoters || 0;
-                votedVoters += election.participation.voted || 0;
-              }
-            });
-            
-            const participationRate = totalVoters > 0 
-              ? Math.round((votedVoters / totalVoters) * 100) 
-              : 0;
 
-            // Extract voting trends (simplified)
-            let votingTrend = [];
-            const mostRecentElections = [...data]
-              .filter(e => e.timeline && e.timeline.length > 0)
-              .sort((a, b) => new Date(b.endDate) - new Date(a.endDate))
-              .slice(0, 3);
-              
-            if (mostRecentElections.length > 0) {
-              votingTrend = mostRecentElections[0].timeline.map(item => ({
-                date: item.date,
-                votes: item.count
-              }));
-            }
-
-            // Create recent activity from latest elections
-            const recentActivity = data
-              .filter(election => election.status !== "UPCOMING")
-              .sort((a, b) => new Date(b.endDate) - new Date(a.endDate))
-              .slice(0, 5)
-              .map(election => ({
-                id: election.id,
-                title: election.title,
-                date: election.endDate,
-                votes: election.totalVotes,
-                status: election.status
-              }));
-              
-            setDashboardStats({
-              totalElections,
-              activeElections,
-              completedElections,
-              upcomingElections,
-              totalVotes,
-              totalCandidates,
-              totalVoters,
-              participationRate,
-              recentActivity,
-              votingTrend
-            });
-            
-            setError(null);
-          }
-        } catch (fallbackError) {
-          console.error('Fallback also failed:', fallbackError);
-        } finally {
-          setIsLoading(false);
-        }
-      };
-      
-      fetchFromResultsAPI();
-    }
-  }, [error]);
+  if (error) {
+    return (
+      <div className="text-center text-red-500">
+        <p>Error: {error}</p>
+        <p>Please try refreshing the page or contact support.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-1 flex-col">
@@ -174,17 +97,19 @@ export default function AdminDashboardPage() {
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Dashboard Admin</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+                Dashboard Admin
+              </h1>
               <p className="text-muted-foreground mt-1">
                 Selamat datang di dashboard admin sistem e-voting
               </p>
             </div>
             <div className="flex gap-2">
               <Button variant="outline" asChild>
-                <a href="/admin/dashboard/monitoring">
+                <Link href="/admin/dashboard/monitoring">
                   <BarChart className="h-4 w-4 mr-2" />
                   Monitoring
-                </a>
+                </Link>
               </Button>
               <Button>
                 <a href="/admin/dashboard/elections">
@@ -196,7 +121,11 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Tabs */}
-          <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab}>
+          <Tabs
+            defaultValue="overview"
+            value={activeTab}
+            onValueChange={setActiveTab}
+          >
             <TabsList className="grid w-full md:w-auto grid-cols-2 md:grid-cols-3 gap-2">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="elections">Pemilu</TabsTrigger>
@@ -341,9 +270,9 @@ export default function AdminDashboardPage() {
                 <TopElectionsStats isLoading={isLoading} />
 
                 {/* Recent Voting Activity */}
-                <LatestVotesActivity 
-                  isLoading={isLoading} 
-                  activities={dashboardStats.recentActivity} 
+                <LatestVotesActivity
+                  isLoading={isLoading}
+                  activities={dashboardStats.recentActivity}
                 />
               </div>
             </TabsContent>
@@ -378,12 +307,17 @@ export default function AdminDashboardPage() {
                   ) : dashboardStats.recentActivity?.length > 0 ? (
                     <div className="space-y-4">
                       {dashboardStats.recentActivity.map((activity) => (
-                        <div key={activity.id} className="flex items-start gap-4 border-b pb-4">
-                          <div className={`rounded-full p-2 ${
-                            activity.status === 'COMPLETED' 
-                              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
-                              : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                          }`}>
+                        <div
+                          key={activity.id}
+                          className="flex items-start gap-4 border-b pb-4"
+                        >
+                          <div
+                            className={`rounded-full p-2 ${
+                              activity.status === "COMPLETED"
+                                ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                                : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                            }`}
+                          >
                             <Vote className="h-4 w-4" />
                           </div>
                           <div className="space-y-1">
@@ -392,8 +326,17 @@ export default function AdminDashboardPage() {
                               <span>{formatDate(activity.date)}</span>
                               <span>•</span>
                               <span>{activity.votes} suara</span>
-                              <Badge variant={activity.status === 'COMPLETED' ? 'outline' : 'default'} className="ml-2">
-                                {activity.status === 'COMPLETED' ? 'Selesai' : 'Aktif'}
+                              <Badge
+                                variant={
+                                  activity.status === "COMPLETED"
+                                    ? "outline"
+                                    : "default"
+                                }
+                                className="ml-2"
+                              >
+                                {activity.status === "COMPLETED"
+                                  ? "Selesai"
+                                  : "Aktif"}
                               </Badge>
                             </div>
                           </div>
@@ -403,9 +346,12 @@ export default function AdminDashboardPage() {
                   ) : (
                     <div className="flex flex-col items-center justify-center py-8 text-center">
                       <Activity className="h-16 w-16 text-muted-foreground/30 mb-4" />
-                      <h3 className="font-medium text-lg">Belum ada aktivitas</h3>
+                      <h3 className="font-medium text-lg">
+                        Belum ada aktivitas
+                      </h3>
                       <p className="text-muted-foreground max-w-sm mt-1">
-                        Aktivitas akan muncul saat pemilu dan pemilihan mulai berlangsung.
+                        Aktivitas akan muncul saat pemilu dan pemilihan mulai
+                        berlangsung.
                       </p>
                     </div>
                   )}
