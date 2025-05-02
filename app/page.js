@@ -4,6 +4,12 @@ import { useState, useEffect } from "react"
 import { useScroll, useTransform } from "framer-motion"
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/Hero";
+import AboutSection from "@/components/AboutDetails";
+import AboutTechnologies from "@/components/AboutTechnologies";
+import HowToVote from "@/components/HowToVote";
+import FloatingLiveCount from "@/components/FloatingLiveCount";
+import Footer from "@/components/Footer";
+import HowItWorks from "@/components/HowItWork";
 export default function EVotingPlatform() {
   const [scrolled, setScrolled] = useState(false)
   const { scrollYProgress } = useScroll()
@@ -22,9 +28,7 @@ export default function EVotingPlatform() {
 
 
   return (
-    <div
-      className={`min-h-screen transition-colors duration-300`}
-    >
+    <div className={`min-h-screen transition-colors duration-300`}>
       <div className="min-h-screen transition-colors duration-300">
         <Navbar
           scrolled={scrolled}
@@ -33,8 +37,14 @@ export default function EVotingPlatform() {
           navbarY={navbarY}
         />
         <HeroSection />
+        <AboutSection />
+        <HowItWorks />
+        <AboutTechnologies />
+        <HowToVote />
+        <FloatingLiveCount />
+        <Footer />
       </div>
     </div>
-  )
+  );
 }
 

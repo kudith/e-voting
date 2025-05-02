@@ -83,45 +83,8 @@ export async function POST(req) {
         );
       }
 
-      // Verifikasi bahwa suara sudah dihitung
-      if (!vote.isCounted) {
-        return NextResponse.json(
-          { 
-            error: "Vote has not been counted yet",
-            details: {
-              status: "pending",
-              suggestion: "Please wait until the election is completed and votes are counted",
-              voteInfo: {
-                electionId: voteData.electionId,
-                voterId: voteData.voterId,
-                timestamp: voteData.timestamp
-              }
-            }
-          },
-          { status: 400 }
-        );
-      }
-
-      // Verifikasi bahwa election masih valid
-      if (vote.election.status !== "completed") {
-        return NextResponse.json(
-          { 
-            error: "Election is not completed yet",
-            details: {
-              currentStatus: vote.election.status,
-              suggestion: "Please wait until the election is completed to verify your vote",
-              voteInfo: {
-                electionId: voteData.electionId,
-                voterId: voteData.voterId,
-                timestamp: voteData.timestamp
-              }
-            }
-          },
-          { status: 400 }
-        );
-      }
-
       // Kembalikan bukti verifikasi
+
       return NextResponse.json({
         success: true,
         message: "Vote verified successfully",

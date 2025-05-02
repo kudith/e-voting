@@ -19,6 +19,8 @@ import {
   Lock,
   CheckCheck,
   ArrowRight,
+  Award,
+  Star,
 } from "lucide-react";
 import {
   Card,
@@ -29,6 +31,8 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import NoVotingRights from "@/components/voter/no-voting-rights";
 import Link from "next/link";
@@ -135,7 +139,7 @@ export default function VoterDashboard() {
       }
 
       // Redirect to voting page
-      window.location.href = `/voter/vote/${currentElection.id}`;
+      window.location.href = `/voter/vote/`;
     } catch (error) {
       console.error("Error navigating to vote page:", error);
       toast.error("Kesalahan", {
@@ -242,26 +246,26 @@ export default function VoterDashboard() {
                   <div className="flex justify-between items-start">
                     <div>
                       <CardTitle className="text-3xl font-bold ">
-                        Hello, {voter?.name}!
+                        Halo, {voter?.name}!
                       </CardTitle>
                       <CardDescription className="text-base mt-1 ">
                         Selamat Datang di Platform SiPilih. Anda mengikuti pemilu untuk:
                         <br />
-                        <span className="font-bold text-primary">{currentElection?.title || "No active election"}</span>
+                        <span className="font-bold text-primary">{currentElection?.title || "Tidak ada pemilu aktif"}</span>
                       </CardDescription>
                     </div>
-                    <Badge className="px-3 py-1 text-sm flex items-center gap-1 self-start border bg-blue-500/10 text-blue-600">
+                    <Badge className="px-3 py-1 text-sm flex items-center gap-1 self-start border border-primary">
                       {hasVoted ? (
                         <>
-                          <CheckCircle className="h-3.5 w-3.5 mr-1" /> Voted
+                          <CheckCircle className="h-3.5 w-3.5 mr-1" /> Sudah Memilih
                         </>
                       ) : currentElection?.status === "ongoing" ? (
                         <>
-                          <Clock className="h-3.5 w-3.5 mr-1" /> Ongoing
+                          <Clock className="h-3.5 w-3.5 mr-1" /> Sedang Berlangsung
                         </>
                       ) : (
                         <>
-                          <Clock className="h-3.5 w-3.5 mr-1" /> Pending
+                          <Clock className="h-3.5 w-3.5 mr-1" /> Menunggu
                         </>
                       )}
                     </Badge>
@@ -269,14 +273,14 @@ export default function VoterDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-col sm:flex-row gap-4 mt-2">
-                    <div className="flex-1 rounded-xl p-4 border border-blue-500/20 bg-gradient-to-br from-blue-500/5 to-purple-500/5 hover:from-blue-500/10 hover:to-purple-500/10 transition-all duration-300">
+                    <div className="flex-1 rounded-xl p-4 border transition-all duration-300">
                       <div className="flex items-center mb-2">
                         <Vote className="h-5 w-5 mr-2 text-blue-600" />
-                        <h3 className="font-medium ">Election Status</h3>
+                        <h3 className="font-medium ">Status Pemilihan</h3>
                       </div>
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
-                          <span className="">Participation</span>
+                          <span className="">Tingkat Partisipasi</span>
                           <span className="font-medium ">
                             {Math.round(participationRate)}%
                           </span>
@@ -290,7 +294,7 @@ export default function VoterDashboard() {
                           />
                         </div>
                         <p className="text-xs ">
-                          {votedCount} out of {totalVoters} voters
+                          {votedCount} dari {totalVoters} pemilih
                         </p>
                       </div>
                     </div>
@@ -298,13 +302,13 @@ export default function VoterDashboard() {
                     <div className="flex-1 rounded-xl p-4 border border-emerald-500/20 bg-gradient-to-br from-emerald-500/5 to-teal-500/5 hover:from-emerald-500/10 hover:to-teal-500/10 transition-all duration-300">
                       <div className="flex items-center mb-2">
                         <Clock className="h-5 w-5 mr-2 text-emerald-600" />
-                        <h3 className="font-medium ">Time Remaining</h3>
+                        <h3 className="font-medium ">Waktu Tersisa</h3>
                       </div>
                       <div className="flex justify-between gap-2 mt-3">
-                        <TimeUnit value={timeLeft.days} label="Days" />
-                        <TimeUnit value={timeLeft.hours} label="Hours" />
-                        <TimeUnit value={timeLeft.minutes} label="Mins" />
-                        <TimeUnit value={timeLeft.seconds} label="Secs" />
+                        <TimeUnit value={timeLeft.days} label="Hari" />
+                        <TimeUnit value={timeLeft.hours} label="Jam" />
+                        <TimeUnit value={timeLeft.minutes} label="Menit" />
+                        <TimeUnit value={timeLeft.seconds} label="Detik" />
                       </div>
                     </div>
                   </div>
@@ -316,7 +320,7 @@ export default function VoterDashboard() {
             <motion.div variants={itemVariants}>
               <Card className="border-0 shadow-xl h-full ">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-xl ">Take Action</CardTitle>
+                  <CardTitle className="text-xl ">Ambil Tindakan</CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col justify-center h-[calc(100%-80px)]">
                   {!hasVoted && isEligible ? (
@@ -333,7 +337,7 @@ export default function VoterDashboard() {
                         className="w-full py-6 mt-4 rounded-xl font-medium transition-all duration-300 cursor-pointer shadow-md bg-primary-foreground text-primary hover:bg-primary/5"
                       >
                         <span className="flex items-center gap-2">
-                          🗳️ Mulai Voting <ArrowRight className="h-4 w-4" />
+                          Mulai Voting <ArrowRight className="h-4 w-4" />
                         </span>
                       </Button>
                     </div>
@@ -343,22 +347,18 @@ export default function VoterDashboard() {
                         <div className="w-12 h-12 rounded-full flex items-center justify-center mb-2 bg-emerald-500/20">
                           <CheckCheck className="h-6 w-6 text-emerald-400" />
                         </div>
-                        <p className="font-medium mb-3 text-emerald-600">
-                          Your vote has been recorded securely
+                        <p className="font-medium mb-2 text-emerald-600">
+                          Suara Anda telah direkam secara aman
                         </p>
-                        <div className="flex items-center gap-2 w-full">
-                          <div className="text-xs font-mono p-2 rounded overflow-hidden overflow-ellipsis flex-1 bg-gray-100">
-                            {voterStatus?.voteHash}
-                          </div>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={copyToClipboard}
-                            className="flex-shrink-0 transition-all duration-300 border-gray-300"
-                          >
-                            <Copy className="h-4 w-4" />
-                          </Button>
-                        </div>
+                        <Button
+                          onClick={() => router.push(`/voter/verify`)}
+                          variant="outline"
+                          className="w-full py-2 rounded-lg font-medium transition-all duration-300 cursor-pointer border-emerald-300 text-emerald-600"
+                        >
+                          <span className="flex items-center gap-2">
+                            <Shield className="h-4 w-4" /> Verifikasi Suara Anda
+                          </span>
+                        </Button>
                       </div>
                     </div>
                   )}
@@ -367,7 +367,7 @@ export default function VoterDashboard() {
             </motion.div>
           </div>
 
-          {/* Top Candidates Preview */}
+          {/* Kandidat yang mengikuti berdasarkan election yang diikuti voter */}
           {candidates.length > 0 && (
             <motion.section variants={itemVariants}>
               <Card className="border-0 shadow-xl ">
@@ -399,45 +399,79 @@ export default function VoterDashboard() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.1 * index, duration: 0.5 }}
+                        className="group relative"
                       >
-                        <Card className="shadow-xl border-accent transition-all duration-300 overflow-hidden group hover:shadow-md py-4 gap-2">
-                          <CardHeader className="p-3 pb-0 space-y-0 py-0">
-                            <div className="w-full aspect-square overflow-hidden rounded-lg">
-                              <img
-                                src={candidate.photo || "https://via.placeholder.com/300x300?text=No+Photo"}
-                                alt={candidate.name}
-                                className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
-                              />
+                        <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-blue-500/20 rounded-xl blur-xl group-hover:opacity-75 transition-opacity duration-500" />
+                        <Card className="relative py-0 gap-2 h-full border-0 shadow-lg overflow-hidden bg-background/40 backdrop-blur-sm transition-all duration-500 group-hover:bg-background/60">
+                          <CardHeader className="p-0">
+                            <div className="relative aspect-square w-full overflow-hidden">
+                              <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-blue-500/10 rounded-lg" />
+                              <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent rounded-lg" />
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <Avatar className="w-full h-full p-2 rounded-lg border-0 shadow-none transition-transform duration-500 group-hover:scale-105">
+                                  <AvatarImage 
+                                    src={candidate.photo || "https://via.placeholder.com/300x300?text=No+Photo"} 
+                                    alt={candidate.name}
+                                    className="object-cover w-full h-full rounded-full"
+                                  />
+                                  <AvatarFallback className="w-full h-full bg-gradient-to-br from-primary/20 to-blue-500/20 flex items-center justify-center text-2xl">
+                                    {candidate.name.split(' ').map(n => n[0]).join('')}
+                                  </AvatarFallback>
+                                </Avatar>
+                              </div>
+                              {/* Ranking badge */}
+                              <div className="absolute top-2 right-2">
+                                <Badge variant="outline" className="bg-background/80 backdrop-blur-sm px-2 py-0.5 text-xs font-medium border-primary/20">
+                                  No. {candidate.peringkat || index + 1}
+                                </Badge>
+                              </div>
+                              {/* Top candidate indicator */}
+                              {(candidate.peringkat === 1 || index === 0) && (
+                                <div className="absolute bottom-2 right-2">
+                                  <Badge className="bg-primary/10 text-primary border-primary/20 px-2 py-0.5 text-xs font-medium">
+                                    <Star className="h-3 w-3 mr-1" /> Teratas
+                                  </Badge>
+                                </div>
+                              )}
                             </div>
                           </CardHeader>
-                          <CardContent className="p-4 pt-3 space-y-3 py-0">
-                            <div className="flex items-center justify-between">
-                              <Badge className="px-2.5 py-0.5 text-xs font-medium rounded-md bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 text-blue-600">
-                                {candidate.voteCount || 0} votes
-                              </Badge>
-                              <Badge variant="outline" className="px-2.5 py-0.5 text-xs font-medium rounded-md border-gray-200 ">
-                                #{index + 1}
-                              </Badge>
-                            </div>
-                            <div>
-                              <h3 className="text-base font-semibold leading-tight line-clamp-1 ">
+                          <CardContent className="p-3 pt-0 space-y-2">
+                            <div className="text-center">
+                              <h3 className="text-sm font-semibold mb-0.5 bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-500">
                                 {candidate.name}
                               </h3>
+                              {candidate.shortBio && (
+                                <p className="text-xs text-muted-foreground line-clamp-1">{candidate.shortBio}</p>
+                              )}
                             </div>
-                            <div className="rounded-md text-xs italic">
-                              <p className="line-clamp-3">"{candidate.vision?.substring(0, 80) || "No vision statement"}..."</p>
+
+                            <div className="space-y-1 pt-1">
+                              <div className="flex justify-between text-xs">
+                                <span className="text-muted-foreground flex items-center gap-1">
+                                  <Vote className="h-3 w-3" /> Suara
+                                </span>
+                                <span className="font-medium">{candidate.voteCount || 0} ({candidate.votePercentage || "0.0"}%)</span>
+                              </div>
+                              <Progress 
+                                value={parseFloat(candidate.votePercentage) || 0} 
+                                className={cn(
+                                  "h-1.5 rounded-full",
+                                  (candidate.peringkat === 1 || index === 0) ? "bg-primary/20" : "bg-primary/10"
+                                )}
+                              />
                             </div>
-                          </CardContent>
-                          <div className="px-4 pb-0">
-                            <Button
-                              variant="outline"
-                              size="sm"
+
+                            <Button 
+                              className={cn(
+                                "w-full cursor-pointer gap-1.5 h-7 text-xs mt-1",
+                                (candidate.peringkat === 1 || index === 0) ? "bg-primary/90 hover:bg-primary" : ""
+                              )}
                               onClick={() => router.push(`/voter/candidates/${candidate.id}`)}
-                              className="w-full cursor-pointer flex items-center justify-center gap-1 text-xs"
                             >
-                              Lihat Profil <ExternalLink className="h-3 w-3 ml-1" />
+                              Lihat Profil
+                              <ArrowRight className="h-3 w-3 transition-transform duration-300 group-hover:translate-x-1" />
                             </Button>
-                          </div>
+                          </CardContent>
                         </Card>
                       </motion.div>
                     ))}
@@ -460,23 +494,24 @@ export default function VoterDashboard() {
                   </div>
                   <div>
                     <CardTitle className="text-lg ">
-                      Verify Your Vote
+                      Verifikasi Suara Anda
                     </CardTitle>
                     <CardDescription className="">
-                      Ensure your vote was recorded correctly
+                      Pastikan suara Anda telah direkam dengan benar
                     </CardDescription>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
                 <p className="text-sm mb-4 ">
-                  Our blockchain technology allows you to verify that your vote was counted correctly without revealing who you voted for.
+                  Teknologi blockchain kami memungkinkan Anda untuk memverifikasi bahwa suara Anda telah direkam dengan benar tanpa mengungkapkan siapa yang Anda pilih.
                 </p>
                 <Button
                   variant="outline"
                   className="w-full flex items-center justify-center gap-2 py-5 border-gray-300 hover:border-blue-500/50 bg-white/50 hover:bg-gradient-to-r hover:from-blue-500/10 hover:to-purple-500/10"
+                  onClick={() => router.push('/voter/verify')}
                 >
-                  <Search className="h-4 w-4" /> Verify Your Vote
+                  <Search className="h-4 w-4" /> Verifikasi Suara Anda
                 </Button>
               </CardContent>
             </Card>
@@ -489,23 +524,24 @@ export default function VoterDashboard() {
                   </div>
                   <div>
                     <CardTitle className="text-lg ">
-                      Live Results
+                      Hasil Langsung
                     </CardTitle>
                     <CardDescription className="">
-                      View real-time election statistics
+                      Lihat statistik pemilihan secara real-time
                     </CardDescription>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
                 <p className="text-sm mb-4 ">
-                  Track the election progress in real-time with detailed analytics, charts, and breakdowns of voting patterns.
+                  Lacak kemajuan pemilihan secara real-time dengan analitik terperinci, grafik, dan breakdown pola pemilihan.
                 </p>
                 <Button
                   variant="outline"
                   className="w-full flex items-center justify-center gap-2 py-5 border-gray-300 hover:border-emerald-500/50 bg-white/50 hover:bg-gradient-to-r hover:from-emerald-500/10 hover:to-teal-500/10"
+                  onClick={() => router.push('/voter/result')}
                 >
-                  <BarChart3 className="h-4 w-4" /> View Live Results
+                  <BarChart3 className="h-4 w-4" /> Lihat Hasil Langsung
                 </Button>
               </CardContent>
             </Card>

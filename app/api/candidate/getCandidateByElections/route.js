@@ -1,14 +1,16 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
-
+/**
+ * API endpoint to get candidates by election ID
+ */
 export async function GET(req) {
     try {
-        // Ambil parameter `electionId` dari query string
+        // Get electionId from query string
         const { searchParams } = new URL(req.url);
         const electionId = searchParams.get("electionId");
 
-        // Validasi jika `electionId` tidak diberikan
+        // Validate if electionId is not provided
         if (!electionId) {
             return NextResponse.json(
                 { error: "Election ID is required." },
@@ -16,11 +18,14 @@ export async function GET(req) {
             );
         }
 
-        console.log(`Fetching candidates for electionId: ${electionId}`);
+        console.log(`Fetching candidates for election ID: ${electionId}`);
 
-        // Fetch candidates berdasarkan `electionId`
+        // Fetch candidates based on electionId
         const candidates = await prisma.candidate.findMany({
             where: { electionId },
+            orderBy: {
+                voteCount: 'desc'
+            },
             include: {
                 election: {
                     select: {
@@ -29,60 +34,64 @@ export async function GET(req) {
                         description: true,
                         startDate: true,
                         endDate: true,
+                        status: true,
+                        totalVotes: true,
                     },
                 },
+                socialMedia: true,
+                education: {
+                    orderBy: {
+                        year: 'desc'
+                    }
+                },
+                experience: {
+                    orderBy: {
+                        period: 'desc'
+                    }
+                },
+                achievements: {
+                    orderBy: {
+                        year: 'desc'
+                    }
+                },
+                programs: true,
+                stats: true
             },
         });
 
-        // Jika tidak ada kandidat ditemukan
+        // If no candidates found
         if (!candidates || candidates.length === 0) {
-            console.log("No candidates found for this election.");
+            console.log("No candidates found for this election ID.");
             return NextResponse.json(
-                { error: "No candidates found for the given election ID." },
+                { error: "No candidates found for the provided election ID." },
                 { status: 404 }
             );
         }
 
         console.log(`Found ${candidates.length} candidates for election ID ${electionId}`);
         
-        // Log detailed info for each candidate
-        candidates.forEach((candidate, index) => {
-            console.log(`\nCandidate ${index + 1}:`);
-            console.log(`ID: ${candidate.id}`);
-            console.log(`Name: ${candidate.name}`);
-            console.log(`Photo: ${candidate.photo || "NO PHOTO"}`);
-            console.log(`Vision: ${candidate.vision?.substring(0, 30) || "NO VISION"}...`);
-            console.log(`Vote count: ${candidate.voteCount}`);
+        // Calculate total votes for the election
+        const totalVotes = candidates.reduce((sum, candidate) => sum + candidate.voteCount, 0);
+        
+        // Add vote percentage and ranking to each candidate
+        const candidatesWithPercentage = candidates.map((candidate, index) => {
+            // Calculate percentage with 1 decimal place precision
+            const percentage = totalVotes > 0 
+                ? ((candidate.voteCount / totalVotes) * 100).toFixed(1) 
+                : "0.0";
+                
+            return {
+                ...candidate,
+                votePercentage: percentage, // English key name for votePercentage
+                ranking: index + 1          // English key name for ranking
+            };
         });
-
-        // Format data kandidat
-        const formattedCandidates = candidates.map((candidate) => ({
-            id: candidate.id,
-            name: candidate.name,
-            photo: candidate.photo,
-            vision: candidate.vision,
-            mission: candidate.mission,
-            shortBio: candidate.shortBio,
-            voteCount: candidate.voteCount,
-            election: candidate.election
-                ? {
-                      id: candidate.election.id,
-                      title: candidate.election.title,
-                      description: candidate.election.description,
-                      startDate: candidate.election.startDate,
-                      endDate: candidate.election.endDate,
-                  }
-                : null,
-            createdAt: candidate.createdAt,
-            updatedAt: candidate.updatedAt,
-        }));
-
-        console.log("Successfully retrieved candidates for the election.");
-        return NextResponse.json(formattedCandidates, { status: 200 });
+        
+        console.log("Successfully retrieved candidates with vote percentages for the election.");
+        return NextResponse.json(candidatesWithPercentage, { status: 200 });
     } catch (error) {
         console.error("An error occurred while fetching candidates:", error);
 
-        // Return error response
         return NextResponse.json(
             { error: "Internal server error. Please try again later." },
             { status: 500 }

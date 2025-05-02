@@ -69,6 +69,61 @@ export async function POST(req) {
       );
     }
 
+    // Cek status dan waktu pemilu
+    const election = await prisma.election.findUnique({
+      where: { id: electionId }
+    });
+
+    if (!election) {
+      return NextResponse.json(
+        { 
+          error: "Election not found",
+          details: {
+            suggestion: "Please check if the election ID is correct"
+          }
+        },
+        { status: 404 }
+      );
+    }
+
+    const now = new Date();
+    const endDate = new Date(election.endDate);
+
+    // Cek apakah pemilu sudah berakhir
+    if (now > endDate) {
+      // Update status pemilu menjadi completed jika sudah melewati endDate
+      await prisma.election.update({
+        where: { id: electionId },
+        data: { status: "completed" }
+      });
+
+      return NextResponse.json(
+        { 
+          error: "Election has ended",
+          details: {
+            suggestion: "Voting period has ended, you can no longer submit votes",
+            endDate: election.endDate
+          }
+        },
+        { status: 400 }
+      );
+    }
+
+    // Cek apakah pemilu sudah dimulai
+    const startDate = new Date(election.startDate);
+    if (now < startDate) {
+      return NextResponse.json(
+        { 
+          error: "Election has not started yet",
+          details: {
+            suggestion: "Please wait until the election starts",
+            startDate: election.startDate
+          }
+        },
+        { status: 400 }
+      );
+    }
+
     // Cek apakah pemilih sudah memilih di pemilu ini
     const existingVote = await prisma.vote.findFirst({
       where: {
@@ -127,7 +182,7 @@ export async function POST(req) {
 
     // Mulai transaksi database
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Simpan suara terenkripsi
+      // 1. Simpan suara terenkripsi dengan isCounted = true
       const vote = await tx.vote.create({
         data: {
           election: {
@@ -140,7 +195,7 @@ export async function POST(req) {
           encryptedKey: encryptedVote.encryptedKey,
           iv: encryptedVote.iv,
           authTag: encryptedVote.authTag,
-          isCounted: false,
+          isCounted: true, // Langsung dihitung saat submit
         },
       });
 

@@ -31,8 +31,10 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar
 } from "@/components/ui/sidebar"
 import { VoteIcon } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
 
 const data = {
   user: {
@@ -57,8 +59,13 @@ const data = {
       icon: VoteIcon,
     },
     {
+      title: "Verifikasi Suara",
+      url: "/voter/verify",
+      icon: VoteIcon,
+    },
+    {
       title: "Hasil",
-      url: "/voter/results",
+      url: "/voter/result",
       icon: IconChartBar,
     },
     
@@ -85,8 +92,17 @@ const data = {
 export function AppSidebar({
   ...props
 }) {
+  const { state } = useSidebar()
+  const [mounted, setMounted] = React.useState(false)
+  const isCollapsed = mounted && state === "collapsed"
+
+  // Only enable animations after component has mounted on the client
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
+
   return (
-    (<Sidebar collapsible="offcanvas" {...props}>
+    <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
@@ -100,12 +116,21 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        {mounted ? (
+          <>
+            {!isCollapsed && (
+              <NavMain items={data.navMain} />
+            )}
+          </>
+        ) : (
+          // Static rendering for server-side
+          <NavMain items={data.navMain} />
+        )}
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />
       </SidebarFooter>
-    </Sidebar>)
+    </Sidebar>
   );
 }

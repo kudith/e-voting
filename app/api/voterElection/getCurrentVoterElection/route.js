@@ -32,13 +32,19 @@ export async function GET() {
       );
     }
 
-    // Get active election with voter election data
-    const activeElection = await prisma.election.findFirst({
+    // Get active or completed election with voter election data
+    const voterElection = await prisma.election.findFirst({
       where: {
-        status: "active",
-        endDate: {
-          gt: new Date(),
-        },
+        OR: [
+          { status: "active" },
+          { status: "ongoing" },
+          { status: "completed" }
+        ],
+        voterElections: {
+          some: {
+            voterId: voter.id,
+          }
+        }
       },
       include: {
         voterElections: {
@@ -57,38 +63,41 @@ export async function GET() {
         },
         statistics: true,
       },
+      orderBy: {
+        endDate: 'desc' // Get the most recent election first
+      },
     });
 
-    if (!activeElection) {
+    if (!voterElection) {
       return new NextResponse(
         JSON.stringify({
-          error: "No active election found",
+          error: "No active or completed election found for this voter",
         }),
         { status: 404 }
       );
     }
 
     // Get voter's election status
-    const voterElection = activeElection.voterElections[0];
+    const voterElectionStatus = voterElection.voterElections[0];
     
     // Format response
     const response = {
       election: {
-        id: activeElection.id,
-        title: activeElection.title,
-        description: activeElection.description,
-        startDate: activeElection.startDate,
-        endDate: activeElection.endDate,
-        status: activeElection.status,
-        totalVoters: activeElection.statistics?.totalVoters || 0,
-        votedCount: activeElection.statistics?.votersWhoVoted || 0,
+        id: voterElection.id,
+        title: voterElection.title,
+        description: voterElection.description,
+        startDate: voterElection.startDate,
+        endDate: voterElection.endDate,
+        status: voterElection.status,
+        totalVoters: voterElection.statistics?.totalVoters || 0,
+        votedCount: voterElection.statistics?.votersWhoVoted || 0,
       },
-      voterStatus: voterElection ? {
-        isEligible: voterElection.isEligible,
-        hasVoted: voterElection.hasVoted,
-        voteHash: activeElection.votes[0]?.voteHash || null,
+      voterStatus: voterElectionStatus ? {
+        isEligible: voterElectionStatus.isEligible,
+        hasVoted: voterElectionStatus.hasVoted,
+        voteHash: voterElection.votes[0]?.voteHash || null,
       } : null,
-      candidates: activeElection.candidates.map(candidate => ({
+      candidates: voterElection.candidates.map(candidate => ({
         id: candidate.id,
         name: candidate.name,
         photo: candidate.photo,
