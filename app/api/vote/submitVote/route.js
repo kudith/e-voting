@@ -1,22 +1,7 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-import { z } from "zod";
-import crypto from "crypto";
+import prisma from "@/lib/prisma";
+import { hybridEncrypt, generateSecureHash } from "@/lib/encryption";
 
-const prisma = new PrismaClient();
-
-// Zod schema untuk validasi input
-const voteSchema = z.object({
-  voterId: z.string().min(1, "Voter ID is required"),
-  candidateId: z.string().min(1, "Candidate ID is required"),
-});
-
-function generateVoteHash(voterId, candidateId, electionId) {
-  return crypto
-    .createHash("sha256")
-    .update(`${voterId}-${candidateId}-${electionId}-${Date.now()}`)
-    .digest("hex");
-}
 
 // Fungsi untuk memperbarui statistik pemilu
 async function updateElectionStatistics(electionId) {
@@ -66,111 +51,224 @@ async function updateElectionStatistics(electionId) {
 
 export async function POST(req) {
   try {
-    const body = await req.json();
-    const data = voteSchema.parse(body);
+    const { electionId, candidateId, voterId } = await req.json();
 
-    // Validasi keberadaan pemilih
-    const voter = await prisma.voter.findUnique({
-      where: { id: data.voterId },
-    });
-    if (!voter) {
-      return NextResponse.json({ error: "Voter not found." }, { status: 404 });
+    if (!electionId || !candidateId || !voterId) {
+      return NextResponse.json(
+        { 
+          error: "Missing required fields",
+          details: {
+            missingFields: {
+              electionId: !electionId,
+              candidateId: !candidateId,
+              voterId: !voterId
+            }
+          }
+        },
+        { status: 400 }
+      );
     }
 
-    // Validasi keberadaan kandidat dan ambil relasi electionId
-    const candidate = await prisma.candidate.findUnique({
-      where: { id: data.candidateId },
-      include: {
-        election: {
-          select: {
-            id: true,
-          },
+    // Cek status dan waktu pemilu
+    const election = await prisma.election.findUnique({
+      where: { id: electionId }
+    });
+
+    if (!election) {
+      return NextResponse.json(
+        { 
+          error: "Election not found",
+          details: {
+            suggestion: "Please check if the election ID is correct"
+          }
         },
+        { status: 404 }
+      );
+    }
+
+    const now = new Date();
+    const endDate = new Date(election.endDate);
+
+    // Cek apakah pemilu sudah berakhir
+    if (now > endDate) {
+      // Update status pemilu menjadi completed jika sudah melewati endDate
+      await prisma.election.update({
+        where: { id: electionId },
+        data: { status: "completed" }
+      });
+
+      return NextResponse.json(
+        { 
+          error: "Election has ended",
+          details: {
+            suggestion: "Voting period has ended, you can no longer submit votes",
+            endDate: election.endDate
+          }
+        },
+        { status: 400 }
+      );
+    }
+
+    // Cek apakah pemilu sudah dimulai
+    const startDate = new Date(election.startDate);
+    if (now < startDate) {
+      return NextResponse.json(
+        { 
+          error: "Election has not started yet",
+          details: {
+            suggestion: "Please wait until the election starts",
+            startDate: election.startDate
+          }
+        },
+        { status: 400 }
+      );
+    }
+
+    // Cek apakah pemilih sudah memilih di pemilu ini
+    const existingVote = await prisma.vote.findFirst({
+      where: {
+        electionId: electionId,
+        voterId: voterId,
       },
     });
-    if (!candidate) {
-      return NextResponse.json({ error: "Candidate not found." }, { status: 404 });
+
+    if (existingVote) {
+      return NextResponse.json(
+        { 
+          error: "You have already voted in this election",
+          details: {
+            suggestion: "Each voter can only vote once in an election"
+          }
+        },
+        { status: 400 }
+      );
     }
 
-    const electionId = candidate.election.id;
-
-    // Validasi apakah pemilih memenuhi syarat untuk pemilu ini
+    // Cek apakah pemilih memenuhi syarat untuk pemilu ini
     const voterElection = await prisma.voterElection.findUnique({
       where: {
         voterId_electionId: {
-          voterId: data.voterId,
+          voterId: voterId,
           electionId: electionId,
         },
       },
     });
+
     if (!voterElection || !voterElection.isEligible) {
-      return NextResponse.json({ error: "Voter is not eligible to vote in this election." }, { status: 403 });
-    }
-
-    // Validasi apakah pemilih sudah memberikan suara untuk pemilu ini
-    if (voterElection.hasVoted) {
-      return NextResponse.json({ error: "Voter has already voted in this election." }, { status: 400 });
-    }
-
-    // Generate hash suara
-    const hashVote = generateVoteHash(data.voterId, data.candidateId, electionId);
-
-    console.log("Submitting vote for voter:", data.voterId);
-
-    // Simpan suara ke database
-    await prisma.vote.create({
-      data: {
-        voterId: data.voterId,
-        candidateId: data.candidateId,
-        electionId: electionId,
-        voteHash: hashVote,
-      },
-    });
-
-    // Perbarui status voted di VoterElection
-    await prisma.voterElection.update({
-      where: {
-        voterId_electionId: {
-          voterId: data.voterId,
-          electionId: electionId,
+      return NextResponse.json(
+        { 
+          error: "You are not eligible to vote in this election",
+          details: {
+            suggestion: "Please check your voter eligibility status"
+          }
         },
-      },
-      data: {
-        hasVoted: true, // Tandai bahwa pemilih telah memberikan suara
-      },
+        { status: 403 }
+      );
+    }
+
+    // Enkripsi data suara
+    const voteData = {
+      electionId,
+      candidateId,
+      voterId,
+      timestamp: new Date().toISOString()
+    };
+
+    // Generate hash sebelum enkripsi
+    const voteHash = generateSecureHash(JSON.stringify(voteData));
+    
+    // Enkripsi data
+    const encryptedVote = hybridEncrypt(JSON.stringify(voteData));
+
+    // Mulai transaksi database
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Simpan suara terenkripsi dengan isCounted = true
+      const vote = await tx.vote.create({
+        data: {
+          election: {
+            connect: {
+              id: electionId
+            }
+          },
+          voterId: voterId,
+          encryptedData: encryptedVote.encryptedData,
+          encryptedKey: encryptedVote.encryptedKey,
+          iv: encryptedVote.iv,
+          authTag: encryptedVote.authTag,
+          isCounted: true, // Langsung dihitung saat submit
+        },
+      });
+
+      // 2. Update status voted di VoterElection
+      await tx.voterElection.update({
+        where: {
+          voterId_electionId: {
+            voterId: voterId,
+            electionId: electionId,
+          },
+        },
+        data: {
+          hasVoted: true,
+        },
+      });
+
+      // 3. Update total votes di election
+      await tx.election.update({
+        where: {
+          id: electionId,
+        },
+        data: {
+          totalVotes: {
+            increment: 1,
+          },
+        },
+      });
+
+      // 4. Update vote count di candidate
+      await tx.candidate.update({
+        where: {
+          id: candidateId,
+        },
+        data: {
+          voteCount: {
+            increment: 1,
+          },
+        },
+      });
+
+      return vote;
     });
 
-    // Tambahkan jumlah suara untuk kandidat
-    await prisma.candidate.update({
-      where: { id: data.candidateId },
-      data: { voteCount: { increment: 1 } },
-    });
-
-    // Tambahkan total suara untuk pemilu
-    await prisma.election.update({
-      where: { id: electionId },
-      data: { totalVotes: { increment: 1 } },
-    });
-
-    // Perbarui statistik pemilu
+    // Update election statistics
     await updateElectionStatistics(electionId);
 
-    console.log("Vote submitted successfully");
+    // Kembalikan bukti suara yang bisa digunakan untuk verifikasi
+    return NextResponse.json({
+      success: true,
+      message: "Vote submitted successfully",
+      data: {
+        voteId: result.id,
+        voteHash: voteHash, // Hash hanya diberikan sekali ke pemilih
+        electionId: electionId,
+        timestamp: voteData.timestamp,
+        verificationInstructions: {
+          message: "Please save this hash securely. You will need it to verify your vote later.",
+          warning: "This hash will only be shown once and cannot be retrieved if lost."
+        }
+      },
+    });
 
-    // Respons sukses yang profesional
+  } catch (error) {
+    console.error("Error submitting vote:", error);
     return NextResponse.json(
-      { message: "Vote submitted successfully." },
-      { status: 201 }
+      { 
+        error: "Internal server error",
+        details: {
+          message: error.message,
+          suggestion: "Please try again later or contact support if the problem persists"
+        }
+      },
+      { status: 500 }
     );
-  } catch (err) {
-    if (err instanceof z.ZodError) {
-      // Tangani error validasi Zod
-      return NextResponse.json({ errors: err.errors }, { status: 400 });
-    }
-
-    console.error("[ERROR SUBMITTING VOTE]", err);
-
-    // Tangani error lainnya
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

@@ -1,24 +1,42 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import prisma from "@/lib/prisma";
 
 export async function GET() {
     try {
         console.log("Fetching all candidates data...");
 
-        // Fetch all candidate data with election details
+        // Fetch all candidate data with detailed relations
         const candidates = await prisma.candidate.findMany({
             include: {
                 election: {
                     select: {
                         id: true,
-                        title: true, // Include election ID and title
+                        title: true,
                         description: true,
                         startDate: true,
                         endDate: true,
+                        status: true,
+                        totalVotes: true,
                     },
                 },
+                socialMedia: true,
+                education: {
+                    orderBy: {
+                        year: 'desc'
+                    }
+                },
+                experience: {
+                    orderBy: {
+                        period: 'desc'
+                    }
+                },
+                achievements: {
+                    orderBy: {
+                        year: 'desc'
+                    }
+                },
+                programs: true,
+                stats: true
             },
         });
 
@@ -30,24 +48,44 @@ export async function GET() {
             );
         }
 
-        // Map the response to include election details as an object
-        const formattedCandidates = candidates.map((candidate) => ({
-            id: candidate.id,
-            name: candidate.name,
-            photo: candidate.photo,
-            vision: candidate.vision,
-            mission: candidate.mission,
-            shortBio: candidate.shortBio,
-            voteCount: candidate.voteCount,
-            election: candidate.election
-                ? {
-                      id: candidate.election.id,
-                      title: candidate.election.title,
-                  }
-                : null, // Include election details if available
-            createdAt: candidate.createdAt,
-            updatedAt: candidate.updatedAt,
-        }));
+        // Map the response to include all detailed information
+        const formattedCandidates = candidates.map((candidate) => {
+            // Calculate vote percentage
+            const votePercentage = candidate.election?.totalVotes > 0 
+                ? (candidate.voteCount / candidate.election.totalVotes) * 100 
+                : 0;
+
+            return {
+                id: candidate.id,
+                name: candidate.name,
+                photo: candidate.photo,
+                vision: candidate.vision,
+                mission: candidate.mission,
+                shortBio: candidate.shortBio,
+                details: candidate.details,
+                voteCount: candidate.voteCount,
+                votePercentage: votePercentage.toFixed(1),
+                election: candidate.election
+                    ? {
+                        id: candidate.election.id,
+                        title: candidate.election.title,
+                        description: candidate.election.description,
+                        startDate: candidate.election.startDate,
+                        endDate: candidate.election.endDate,
+                        status: candidate.election.status,
+                        totalVotes: candidate.election.totalVotes,
+                    }
+                    : null,
+                socialMedia: candidate.socialMedia || null,
+                education: candidate.education || [],
+                experience: candidate.experience || [],
+                achievements: candidate.achievements || [],
+                programs: candidate.programs || [],
+                stats: candidate.stats || null,
+                createdAt: candidate.createdAt,
+                updatedAt: candidate.updatedAt,
+            };
+        });
 
         console.log("Successfully retrieved all candidates data.");
         return NextResponse.json(formattedCandidates, { status: 200 });

@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import prisma from "@/lib/prisma";
 
-const prisma = new PrismaClient();
 
 export async function GET() {
   try {
@@ -32,14 +31,12 @@ export async function GET() {
 
     if (!voterElections || voterElections.length === 0) {
       console.warn("No voter elections found in the database.");
-      return NextResponse.json(
-        { error: "No voter elections found" },
-        { status: 404 }
-      );
+      return NextResponse.json([], { status: 200 });
     }
 
     // Format respons agar lebih informatif
     const formattedResponse = voterElections.map((voterElection) => ({
+      id: voterElection.id,
       voter: {
         id: voterElection.voter.id,
         name: voterElection.voter.name,

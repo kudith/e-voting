@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import prisma from "@/lib/prisma";
 import { z } from "zod";
 import dotenv from "dotenv";
 
 dotenv.config();
-const prisma = new PrismaClient();
 
 const KINDE_API_URL = process.env.KINDE_API_URL;
 const KINDE_API_KEY = process.env.KINDE_API_KEY;
@@ -75,19 +74,139 @@ export async function PATCH(req) {
       if (data.email) kindeUpdateData.email = data.email;
       if (data.phone) kindeUpdateData.phone = data.phone;
 
-      const kindeRes = await fetch(`${KINDE_API_URL}/api/v1/user?id=${existingVoter.kindeId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${KINDE_API_KEY}`,
-        },
-        body: JSON.stringify(kindeUpdateData),
-      });
+      console.log("Updating Kinde user with data:", kindeUpdateData);
+      console.log("Kinde API URL:", KINDE_API_URL);
+      console.log("Kinde user ID:", existingVoter.kindeId);
 
-      if (!kindeRes.ok) {
-        const errorText = await kindeRes.text();
+      try {
+        // Update user profile data
+        const kindeRes = await fetch(`${KINDE_API_URL}/api/v1/user?id=${existingVoter.kindeId}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${KINDE_API_KEY}`,
+          },
+          body: JSON.stringify(kindeUpdateData),
+        });
+
+        if (!kindeRes.ok) {
+          const errorText = await kindeRes.text();
+          console.error("Kinde API error:", errorText);
+          return NextResponse.json(
+            { error: "Failed to update Kinde user", detail: errorText },
+            { status: 500 }
+          );
+        }
+
+        const kindeResponse = await kindeRes.json();
+        console.log("Kinde API response:", kindeResponse);
+
+        // If email is being updated, handle email identity
+        if (data.email && data.email !== existingVoter.email) {
+          console.log("Email is being updated, handling email identity");
+          console.log("Current email:", existingVoter.email);
+          console.log("New email:", data.email);
+          
+          // First, get the user's identities to find the current email identity
+          const identitiesUrl = `${KINDE_API_URL}/api/v1/users/${existingVoter.kindeId}/identities`;
+          console.log("Fetching identities from URL:", identitiesUrl);
+          
+          const identitiesRes = await fetch(identitiesUrl, {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${KINDE_API_KEY}`,
+            },
+          });
+
+          if (identitiesRes.ok) {
+            const identitiesData = await identitiesRes.json();
+            console.log("User identities response:", JSON.stringify(identitiesData, null, 2));
+            
+            // Check if identities array exists
+            if (!identitiesData.identities || !Array.isArray(identitiesData.identities)) {
+              console.error("No identities array found in response");
+              console.log("Full response structure:", Object.keys(identitiesData));
+            } else {
+              console.log(`Found ${identitiesData.identities.length} identities`);
+              
+              // Find the current email identity
+              const currentEmailIdentity = identitiesData.identities.find(
+                (identity) => identity.type === "email" && identity.value === existingVoter.email
+              );
+              
+              // Add the new email identity
+              const addIdentityUrl = `${KINDE_API_URL}/api/v1/users/${existingVoter.kindeId}/identities`;
+              console.log("Adding new identity with URL:", addIdentityUrl);
+              
+              const addIdentityRes = await fetch(addIdentityUrl, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${KINDE_API_KEY}`,
+                },
+                body: JSON.stringify({
+                  value: data.email,
+                  type: "email"
+                }),
+              });
+
+              console.log("Add identity response status:", addIdentityRes.status);
+              
+              if (!addIdentityRes.ok) {
+                const errorText = await addIdentityRes.text();
+                console.error("Kinde identity API error. Status:", addIdentityRes.status);
+                console.error("Error details:", errorText);
+                // Continue with the update even if adding identity fails
+              } else {
+                const addIdentityResponse = await addIdentityRes.json();
+                console.log("Kinde identity API response:", JSON.stringify(addIdentityResponse, null, 2));
+                
+                // Get the ID of the newly created identity
+                const newIdentityId = addIdentityResponse.identity?.id;
+                
+                if (newIdentityId) {
+                  console.log("New identity ID:", newIdentityId);
+                  
+                  // Make the new identity primary
+                  const updateIdentityUrl = `${KINDE_API_URL}/api/v1/identities/${newIdentityId}`;
+                  console.log("Updating identity to primary with URL:", updateIdentityUrl);
+                  
+                  const updateIdentityRes = await fetch(updateIdentityUrl, {
+                    method: "PATCH",
+                    headers: {
+                      "Content-Type": "application/json",
+                      Authorization: `Bearer ${KINDE_API_KEY}`,
+                    },
+                    body: JSON.stringify({
+                      is_primary: true
+                    }),
+                  });
+                  
+                  console.log("Update identity response status:", updateIdentityRes.status);
+                  
+                  if (updateIdentityRes.ok) {
+                    const updateResponse = await updateIdentityRes.json();
+                    console.log("Successfully updated identity to primary:", JSON.stringify(updateResponse, null, 2));
+                  } else {
+                    const errorText = await updateIdentityRes.text();
+                    console.error("Error updating identity to primary. Status:", updateIdentityRes.status);
+                    console.error("Error details:", errorText);
+                  }
+                } else {
+                  console.error("No identity ID found in response");
+                }
+              }
+            }
+          } else {
+            const errorText = await identitiesRes.text();
+            console.error("Failed to fetch user identities. Status:", identitiesRes.status);
+            console.error("Error details:", errorText);
+          }
+        }
+      } catch (error) {
+        console.error("Error updating Kinde user:", error);
         return NextResponse.json(
-          { error: "Failed to update Kinde user", detail: errorText },
+          { error: "Failed to update Kinde user", detail: error.message },
           { status: 500 }
         );
       }

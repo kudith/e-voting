@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import prisma from "@/lib/prisma";
 import { z } from "zod";
-
-const prisma = new PrismaClient();
 
 // Zod schema untuk validasi input
 const electionSchema = z.object({

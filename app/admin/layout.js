@@ -16,7 +16,7 @@ export default function AdminLayout({ children }) {
         <SiteHeader />
         <div className="flex flex-1 flex-col">{children}</div>
       </SidebarInset>
-      <Toaster />
+      <Toaster richColors/>
     </SidebarProvider>
   );
 }

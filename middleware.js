@@ -6,51 +6,76 @@ export async function middleware(request) {
 
     const authenticated = await isAuthenticated();
     const user = await getUser();
-    const url = request.nextUrl.clone();
+    const url = request.nextUrl.clone(); // Clone URL untuk modifikasi
 
-    // Log user information
-    const accessToken = await getAccessToken();
-    console.log(`[Access Token] Decoded Token:`, accessToken);
-
-    // Check role claims (array of roles)
+    // Dapatkan roles dan permissions pengguna
     const roles = await getClaim("roles");
     const roleList = roles?.value?.map((r) => r.key) || [];
+    const accessToken = await getAccessToken();
+    const permissions = accessToken?.permissions || [];
 
-    // Access control for /admin
+    // --- Logging untuk Debugging (opsional, bisa dihapus di production) ---
+    // console.log(`[Middleware] Path: ${request.nextUrl.pathname}`);
+    // console.log(`[Middleware] User: ${user?.email || 'Unknown'}`);
+    // console.log(`[Middleware] Authenticated: ${authenticated}`);
+    // console.log(`[Middleware] Role List: ${roleList.join(', ')}`);
+    // console.log(`[Middleware] Permissions: ${permissions.join(', ')}`);
+    // --- Akhir Logging ---
+
+    // Kontrol akses untuk /admin
     if (request.nextUrl.pathname.startsWith("/admin")) {
-        const hasAdminPermission = accessToken.permissions?.includes("access:admin");
         const hasAdminRole = roleList.includes("admin");
+        const hasAdminPermission = permissions.includes("access:admin");
 
-        if (!authenticated || !hasAdminPermission || !hasAdminRole) {
-            console.log(
-                `[Access Denied] Admin access required. User: ${user?.email || "Unknown"}`
-            );
-            url.pathname = "/unauthorized";
+        // console.log(`[Middleware] Admin Check - Role: ${hasAdminRole}, Permission: ${hasAdminPermission}`);
+
+        // Jika tidak terautentikasi atau tidak punya role/permission admin
+        if (!authenticated || !hasAdminRole || !hasAdminPermission) {
+            console.log(`[Middleware] Access denied to admin area for user: ${user?.email || "Unknown"}`);
+            url.pathname = "/unauthorized"; // Redirect ke halaman unauthorized
             return NextResponse.redirect(url);
-        } else {
-            console.log(`[Access Granted] Admin access. User: ${user?.email}`);
         }
+
+        // Jika terautentikasi DAN punya akses admin, cek apakah pathnya adalah persis /admin
+        if (request.nextUrl.pathname === "/admin") {
+            console.log(`[Middleware] Redirecting admin ${user?.email} from /admin to /admin/dashboard`);
+            url.pathname = "/admin/dashboard"; // Redirect ke dashboard admin
+            return NextResponse.redirect(url);
+        }
+
+        // Jika pathnya bukan /admin (misal /admin/users), dan akses valid, lanjutkan
+        console.log(`[Middleware] Access granted to admin area (${request.nextUrl.pathname}) for user: ${user?.email}`);
+        return NextResponse.next(); // Izinkan akses ke path admin spesifik
     }
 
-    // Access control for /dashboard
-    if (request.nextUrl.pathname.startsWith("/dashboard")) {
+    // Kontrol akses untuk /voter
+    if (request.nextUrl.pathname.startsWith("/voter")) {
         const hasVoterRole = roleList.includes("voter");
 
+        // Jika tidak terautentikasi atau tidak punya role voter
         if (!authenticated || !hasVoterRole) {
-            console.log(
-                `[Access Denied] Voter role required. User: ${user?.email || "Unknown"}`
-            );
-            url.pathname = "/unauthorized";
+            console.log(`[Middleware] Access denied to voter area for user: ${user?.email || "Unknown"}`);
+            url.pathname = "/unauthorized"; // Redirect ke halaman unauthorized
             return NextResponse.redirect(url);
-        } else {
-            console.log(`[Access Granted] Voter access. User: ${user?.email}`);
         }
+
+        // Jika terautentikasi DAN punya akses voter, cek apakah pathnya adalah persis /voter
+        if (request.nextUrl.pathname === "/voter") {
+            console.log(`[Middleware] Redirecting voter ${user?.email} from /voter to /voter/dashboard`);
+            url.pathname = "/voter/dashboard"; // Redirect ke dashboard voter
+            return NextResponse.redirect(url);
+        }
+
+        // Jika pathnya bukan /voter (misal /voter/profile), dan akses valid, lanjutkan
+        console.log(`[Middleware] Access granted to voter area (${request.nextUrl.pathname}) for user: ${user?.email}`);
+        return NextResponse.next(); // Izinkan akses ke path voter spesifik
     }
 
-    // Allow other requests
+    // Jika path tidak cocok dengan /admin/* atau /voter/* (seharusnya tidak terjadi karena matcher)
     return NextResponse.next();
 }
 
 export const config = {
-    matcher: ["/admin", "/admin/:path*", "/dashboard", "/dashboard/:path*"],
+    // Pastikan matcher mencakup path dasar (/admin dan /voter) serta sub-pathnya
+    matcher: ["/admin", "/admin/:path*", "/voter", "/voter/:path*"],
 };

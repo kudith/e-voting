@@ -1,8 +1,62 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import prisma from "@/lib/prisma";
 import { z } from "zod";
 
-const prisma = new PrismaClient();
+// Social media schema
+const socialMediaSchema = z.object({
+  twitter: z.string().url("Invalid Twitter URL").optional().or(z.literal("")),
+  facebook: z.string().url("Invalid Facebook URL").optional().or(z.literal("")),
+  instagram: z.string().url("Invalid Instagram URL").optional().or(z.literal("")),
+  linkedin: z.string().url("Invalid LinkedIn URL").optional().or(z.literal("")),
+  website: z.string().url("Invalid Website URL").optional().or(z.literal("")),
+}).optional().nullable();
+
+// Education schema
+const educationSchema = z.array(
+  z.object({
+    id: z.string().optional(),
+    degree: z.string().min(1, "Degree is required"),
+    institution: z.string().min(1, "Institution is required"),
+    year: z.string().min(1, "Year is required"),
+  })
+).optional();
+
+// Experience schema
+const experienceSchema = z.array(
+  z.object({
+    id: z.string().optional(),
+    position: z.string().min(1, "Position is required"),
+    organization: z.string().min(1, "Organization is required"),
+    period: z.string().min(1, "Period is required"),
+  })
+).optional();
+
+// Achievement schema
+const achievementSchema = z.array(
+  z.object({
+    id: z.string().optional(),
+    title: z.string().min(1, "Title is required"),
+    description: z.string().optional().or(z.literal("")),
+    year: z.string().optional().or(z.literal("")),
+  })
+).optional();
+
+// Program schema
+const programSchema = z.array(
+  z.object({
+    id: z.string().optional(),
+    title: z.string().min(1, "Title is required"),
+    description: z.string().min(1, "Description is required"),
+  })
+).optional();
+
+// Stats schema
+const statsSchema = z.object({
+  experience: z.number().min(0).max(100).default(0),
+  leadership: z.number().min(0).max(100).default(0),
+  innovation: z.number().min(0).max(100).default(0),
+  publicSupport: z.number().min(0).max(100).default(0),
+}).optional().nullable();
 
 // Zod schema untuk validasi input
 const updateCandidateSchema = z.object({
@@ -13,6 +67,15 @@ const updateCandidateSchema = z.object({
   mission: z.string().min(10, "Mission must be at least 10 characters").optional(),
   shortBio: z.string().min(10, "Short bio must be at least 10 characters").optional(),
   electionId: z.string().optional(),
+  
+  // New detailed fields
+  details: z.string().min(10, "Detailed biography must be at least 10 characters").optional().or(z.literal("")),
+  socialMedia: socialMediaSchema,
+  education: educationSchema,
+  experience: experienceSchema,
+  achievements: achievementSchema,
+  programs: programSchema,
+  stats: statsSchema,
 });
 
 export async function PATCH(req) {
@@ -21,7 +84,18 @@ export async function PATCH(req) {
     const data = updateCandidateSchema.parse(body);
 
     // Validasi keberadaan kandidat
-    const candidate = await prisma.candidate.findUnique({ where: { id: data.id } });
+    const candidate = await prisma.candidate.findUnique({ 
+      where: { id: data.id },
+      include: {
+        socialMedia: true,
+        education: true,
+        experience: true,
+        achievements: true,
+        programs: true,
+        stats: true,
+      }
+    });
+    
     if (!candidate) {
       return NextResponse.json({ error: "Candidate not found." }, { status: 404 });
     }
@@ -54,17 +128,127 @@ export async function PATCH(req) {
       console.log(`Candidate will now participate in election with ID: ${data.electionId}`);
     }
 
-    // Perbarui kandidat
-    await prisma.candidate.update({
-      where: { id: data.id },
-      data: {
-        name: data.name || candidate.name,
-        photo: data.photo || candidate.photo,
-        vision: data.vision || candidate.vision,
-        mission: data.mission || candidate.mission,
-        shortBio: data.shortBio || candidate.shortBio,
-        electionId: data.electionId || candidate.electionId, // Update electionId jika diberikan
-      },
+    // Prepare transaction for updating candidate and related data
+    await prisma.$transaction(async (prisma) => {
+      // Update candidate basic info
+      await prisma.candidate.update({
+        where: { id: data.id },
+        data: {
+          name: data.name || candidate.name,
+          photo: data.photo || candidate.photo,
+          vision: data.vision || candidate.vision,
+          mission: data.mission || candidate.mission,
+          shortBio: data.shortBio || candidate.shortBio,
+          electionId: data.electionId || candidate.electionId,
+          details: data.details || candidate.details || "",
+        },
+      });
+
+      // Update social media
+      if (data.socialMedia) {
+        if (candidate.socialMedia) {
+          await prisma.socialMedia.update({
+            where: { candidateId: data.id },
+            data: data.socialMedia,
+          });
+        } else {
+          await prisma.socialMedia.create({
+            data: {
+              ...data.socialMedia,
+              candidateId: data.id,
+            },
+          });
+        }
+      }
+
+      // Update stats
+      if (data.stats) {
+        if (candidate.stats) {
+          await prisma.candidateStats.update({
+            where: { candidateId: data.id },
+            data: data.stats,
+          });
+        } else {
+          await prisma.candidateStats.create({
+            data: {
+              ...data.stats,
+              candidateId: data.id,
+            },
+          });
+        }
+      }
+
+      // Handle education updates
+      if (data.education) {
+        // Delete existing entries
+        await prisma.education.deleteMany({
+          where: { candidateId: data.id },
+        });
+        
+        // Create new entries
+        if (data.education.length > 0) {
+          await prisma.education.createMany({
+            data: data.education.map(item => ({
+              ...item,
+              candidateId: data.id,
+            })),
+          });
+        }
+      }
+
+      // Handle experience updates
+      if (data.experience) {
+        // Delete existing entries
+        await prisma.experience.deleteMany({
+          where: { candidateId: data.id },
+        });
+        
+        // Create new entries
+        if (data.experience.length > 0) {
+          await prisma.experience.createMany({
+            data: data.experience.map(item => ({
+              ...item,
+              candidateId: data.id,
+            })),
+          });
+        }
+      }
+
+      // Handle achievements updates
+      if (data.achievements) {
+        // Delete existing entries
+        await prisma.achievement.deleteMany({
+          where: { candidateId: data.id },
+        });
+        
+        // Create new entries
+        if (data.achievements.length > 0) {
+          await prisma.achievement.createMany({
+            data: data.achievements.map(item => ({
+              ...item,
+              candidateId: data.id,
+            })),
+          });
+        }
+      }
+
+      // Handle programs updates
+      if (data.programs) {
+        // Delete existing entries
+        await prisma.program.deleteMany({
+          where: { candidateId: data.id },
+        });
+        
+        // Create new entries
+        if (data.programs.length > 0) {
+          await prisma.program.createMany({
+            data: data.programs.map(item => ({
+              ...item,
+              candidateId: data.id,
+            })),
+          });
+        }
+      }
     });
 
     console.log("Candidate updated successfully");
