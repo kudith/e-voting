@@ -310,7 +310,7 @@ export default function HowToVotePage() {
                   ${
                     index % 2 === 0
                       ? " md:right-auto md:-left-20 md:translate-x-0"
-                      : "md:left-auto md:right-auto md:-right-20 md:translate-x-0"
+                      : "md:left-auto  md:-right-20 md:translate-x-0"
                   } 
                   w-40 h-40 rounded-full ${
                     step.color
