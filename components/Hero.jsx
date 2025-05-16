@@ -7,7 +7,9 @@ import { ArrowRight, ArrowLeft } from "lucide-react";
 import StatsCounter from "./stats-counter";
 import useSWR from "swr";
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
-
+import { LoginLink } from "@kinde-oss/kinde-auth-nextjs/components";
+import { useKindeBrowserClient } from "@kinde-oss/kinde-auth-nextjs";
+import { useRouter } from "next/navigation";
 const fetcher = (url) => fetch(url).then((res) => res.json());
 
 // Predefined positions for decorative particles to prevent hydration errors
@@ -27,6 +29,8 @@ export default function HeroSection() {
   const [ongoingElections, setOngoingElections] = useState([]);
   const heroRef = useRef(null);
   const statsControls = useAnimation();
+  const { user, isAuthenticated } = useKindeBrowserClient();
+  const router = useRouter();
 
   // Fetch all elections
   const { data: elections, error } = useSWR(
@@ -56,6 +60,14 @@ export default function HeroSection() {
       setCurrentElectionIndex((prev) => prev + 1);
     }
   };
+  const handleStartButtonClick = () => {
+    if (isAuthenticated) {
+      // If user is already logged in, redirect to dashboard
+      router.push(user?.isAdmin ? "/admin/dashboard" : "/voter/dashboard");
+    }
+    // If not authenticated, the LoginLink component will handle the redirect to login
+  };
+
 
   const handlePrevious = () => {
     if (ongoingElections && currentElectionIndex > 0) {
@@ -220,12 +232,24 @@ export default function HeroSection() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.6 }}
             >
-              <Button
-                size="lg"
-                className="rounded-full px-8 gap-2 shadow-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 dark:from-emerald-500 dark:to-teal-500 hover:dark:from-emerald-600 hover:dark:to-teal-600 text-white hover:shadow-emerald-500/20 dark:hover:shadow-emerald-500/10 hover:scale-105 transition-all"
-              >
-                Mulai Sekarang <ArrowRight className="h-4 w-4" />
-              </Button>
+              {isAuthenticated ? (
+                <Button
+                  size="lg"
+                  className="rounded-full px-8 gap-2 shadow-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 dark:from-emerald-500 dark:to-teal-500 hover:dark:from-emerald-600 hover:dark:to-teal-600 text-white hover:shadow-emerald-500/20 dark:hover:shadow-emerald-500/10 hover:scale-105 transition-all"
+                  onClick={handleStartButtonClick}
+                >
+                  Mulai Sekarang <ArrowRight className="h-4 w-4" />
+                </Button>
+              ) : (
+                <LoginLink>
+                  <Button
+                    size="lg"
+                    className="rounded-full px-8 gap-2 shadow-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 dark:from-emerald-500 dark:to-teal-500 hover:dark:from-emerald-600 hover:dark:to-teal-600 text-white hover:shadow-emerald-500/20 dark:hover:shadow-emerald-500/10 hover:scale-105 transition-all"
+                  >
+                    Mulai Sekarang <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </LoginLink>
+              )}
               <Button
                 variant="outline"
                 size="lg"

@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Lock, ClipboardCheck, CheckCircle, Eye, BarChart } from "lucide-react";
+import { useKindeBrowserClient } from "@kinde-oss/kinde-auth-nextjs";
+import { useRouter } from "next/navigation";
+import { LoginLink } from "@kinde-oss/kinde-auth-nextjs/components";
 
 // Predefined positions for decorative particles to prevent hydration errors
 const particlePositions = [
@@ -17,6 +20,16 @@ const particlePositions = [
 ];
 
 export default function HowToVotePage() {
+  const { user, isAuthenticated } = useKindeBrowserClient();
+  const router = useRouter();
+
+  const handleVotingButtonClick = () => {
+    if (isAuthenticated) {
+      // Redirect to appropriate dashboard based on user type
+      router.push(user?.isAdmin ? "/admin/dashboard" : "/voter/dashboard");
+    }
+    // If not authenticated, LoginLink will handle the redirect
+  };
   const steps = [
     {
       icon: (
@@ -79,7 +92,10 @@ export default function HowToVotePage() {
   ];
 
   return (
-    <section id="howtovote" className="relative bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-950 py-20 min-h-screen overflow-hidden">
+    <section
+      id="howtovote"
+      className="relative bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-950 py-20 min-h-screen overflow-hidden"
+    >
       {/* Enhanced decorative background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Top-left splash */}
@@ -353,9 +369,20 @@ export default function HowToVotePage() {
           viewport={{ once: true }}
           className="text-center mt-12"
         >
-          <button className="px-8 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 dark:from-emerald-500 dark:to-teal-500 hover:dark:from-emerald-600 hover:dark:to-teal-600 text-white font-medium rounded-full hover:shadow-lg dark:hover:shadow-emerald-900/20 transform hover:scale-105 transition-all">
-            Mulai Voting
-          </button>
+          {isAuthenticated ? (
+            <button
+              onClick={handleVotingButtonClick}
+              className="px-8 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 dark:from-emerald-500 dark:to-teal-500 hover:dark:from-emerald-600 hover:dark:to-teal-600 text-white font-medium rounded-full hover:shadow-lg dark:hover:shadow-emerald-900/20 transform hover:scale-105 transition-all"
+            >
+              Mulai Voting
+            </button>
+          ) : (
+            <LoginLink>
+              <button className="px-8 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 dark:from-emerald-500 dark:to-teal-500 hover:dark:from-emerald-600 hover:dark:to-teal-600 text-white font-medium rounded-full hover:shadow-lg dark:hover:shadow-emerald-900/20 transform hover:scale-105 transition-all">
+                Mulai Voting
+              </button>
+            </LoginLink>
+          )}
         </motion.div>
       </div>
     </section>
