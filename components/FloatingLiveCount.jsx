@@ -23,16 +23,27 @@ export default function FloatingLiveCount() {
   const [activeElectionId, setActiveElectionId] = useState(null);
 
   // Fetch all elections
-  const { data: elections, error: electionsError } = useSWR(
+  const { data: electionsData, error: electionsError } = useSWR(
     "/api/election/getAllElections",
     fetcher
   );
 
   // Fetch all candidates
-  const { data: candidates, error: candidatesError } = useSWR(
+  const { data: candidatesData, error: candidatesError } = useSWR(
     "/api/candidate/getAllCandidates",
     fetcher
   );
+
+  // Normalize data to always be arrays
+  const electionsRaw = Array.isArray(electionsData)
+    ? electionsData
+    : electionsData?.elections || [];
+  const candidates = Array.isArray(candidatesData)
+    ? candidatesData
+    : candidatesData?.candidates || [];
+
+  // Filter only ongoing elections
+  const elections = electionsRaw.filter((e) => e.status === "ongoing");
 
   // Set drag constraints on client-side
   useEffect(() => {
@@ -44,13 +55,15 @@ export default function FloatingLiveCount() {
         right: window.innerWidth,
         bottom: window.innerHeight,
       });
-
-      // Set default active election when data is loaded
-      if (elections?.length && !activeElectionId) {
-        setActiveElectionId(elections[0]?.id);
-      }
     }
-  }, [elections, activeElectionId]);
+  }, []); // Empty dependency array - hanya dijalankan sekali saat mount
+
+  // Set default active election - separate useEffect
+  useEffect(() => {
+    if (elections?.length && !activeElectionId) {
+      setActiveElectionId(elections[0]?.id);
+    }
+  }, [elections]);
 
   // Handle drag position
   const handleDrag = (e, info) => {
@@ -58,7 +71,7 @@ export default function FloatingLiveCount() {
   };
 
   // Get active election data
-  const activeElection = elections?.find(
+  const activeElection = elections?.find?.(
     (election) => election.id === activeElectionId
   );
 
@@ -189,33 +202,35 @@ export default function FloatingLiveCount() {
                 )}
 
                 {/* Loading State - enhanced with animation */}
-                {(!elections || !candidates) && (
-                  <div className="flex flex-col justify-center items-center h-80">
-                    <div className="relative w-16 h-16 mb-4">
-                      <motion.div
-                        className="absolute inset-0 rounded-full border-4 border-emerald-500/30 dark:border-emerald-500/20"
-                        animate={{ rotate: 360 }}
-                        transition={{
-                          duration: 1.5,
-                          repeat: Infinity,
-                          ease: "linear",
-                        }}
-                      />
-                      <motion.div
-                        className="absolute inset-0 rounded-full border-4 border-t-emerald-600 dark:border-t-emerald-400 border-r-transparent border-b-transparent border-l-transparent"
-                        animate={{ rotate: 360 }}
-                        transition={{
-                          duration: 1,
-                          repeat: Infinity,
-                          ease: "linear",
-                        }}
-                      />
+                {(!electionsData || !candidatesData) &&
+                  !electionsError &&
+                  !candidatesError && (
+                    <div className="flex flex-col justify-center items-center h-80">
+                      <div className="relative w-16 h-16 mb-4">
+                        <motion.div
+                          className="absolute inset-0 rounded-full border-4 border-emerald-500/30 dark:border-emerald-500/20"
+                          animate={{ rotate: 360 }}
+                          transition={{
+                            duration: 1.5,
+                            repeat: Infinity,
+                            ease: "linear",
+                          }}
+                        />
+                        <motion.div
+                          className="absolute inset-0 rounded-full border-4 border-t-emerald-600 dark:border-t-emerald-400 border-r-transparent border-b-transparent border-l-transparent"
+                          animate={{ rotate: 360 }}
+                          transition={{
+                            duration: 1,
+                            repeat: Infinity,
+                            ease: "linear",
+                          }}
+                        />
+                      </div>
+                      <span className="text-gray-600 dark:text-gray-300 font-medium">
+                        Loading data...
+                      </span>
                     </div>
-                    <span className="text-gray-600 dark:text-gray-300 font-medium">
-                      Loading data...
-                    </span>
-                  </div>
-                )}
+                  )}
 
                 {/* Election Selector - styled to match Hero */}
                 {elections?.length > 0 && (
@@ -450,7 +465,7 @@ export default function FloatingLiveCount() {
                 )}
 
                 {/* No elections case */}
-                {elections?.length === 0 && (
+                {elections?.length === 0 && electionsData && (
                   <div className="flex flex-col items-center justify-center py-12 text-center">
                     <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-slate-800 flex items-center justify-center mb-4">
                       <BarChart className="h-8 w-8 text-gray-400 dark:text-gray-500" />

@@ -10,7 +10,7 @@ import {
   ResponsiveContainer,
   Tooltip,
   XAxis,
-  YAxis
+  YAxis,
 } from "recharts";
 import { Calendar, BarChart as BarChartIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,16 +18,31 @@ import { Card, CardContent } from "@/components/ui/card";
 
 export default function ElectionVotingChart({ data = [] }) {
   const [chartType, setChartType] = useState("area");
-  
-  // If there's no data, show a placeholder
+
+  // Jika tidak ada data, tampilkan chart kosong dengan pesan
   if (!data || data.length === 0) {
-    const placeholderData = Array.from({ length: 7 }, (_, i) => ({
-      date: new Date(Date.now() - (6 - i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      votes: Math.floor(Math.random() * 50)
-    }));
-    
-    data = placeholderData;
+    return (
+      <div className="w-full">
+        <div className="mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Calendar className="h-4 w-4" />
+            <span>Belum ada data voting</span>
+          </div>
+        </div>
+        <div className="h-[300px] w-full flex items-center justify-center bg-gray-50 dark:bg-slate-900/50 rounded-lg">
+          <div className="text-center">
+            <BarChart className="h-16 w-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
+            <p className="text-gray-500 dark:text-gray-400">
+              Data voting akan muncul setelah ada pemilih yang memberikan suara
+            </p>
+          </div>
+        </div>
+      </div>
+    );
   }
+
+  // Filter data yang memiliki votes > 0 untuk tampilan yang lebih informatif
+  const hasVotes = data.some((item) => item.votes > 0);
 
   return (
     <div className="w-full">
@@ -35,6 +50,11 @@ export default function ElectionVotingChart({ data = [] }) {
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Calendar className="h-4 w-4" />
           <span>Menampilkan {data.length} hari terakhir</span>
+          {hasVotes && (
+            <span className="ml-2 text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full">
+              Total: {data.reduce((sum, item) => sum + item.votes, 0)} suara
+            </span>
+          )}
         </div>
         <div className="flex space-x-2">
           <Button
@@ -60,11 +80,22 @@ export default function ElectionVotingChart({ data = [] }) {
       <div className="h-[300px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           {chartType === "area" ? (
-            <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+            <AreaChart
+              data={data}
+              margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+            >
               <defs>
                 <linearGradient id="colorVotes" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.8} />
-                  <stop offset="95%" stopColor="var(--primary)" stopOpacity={0.1} />
+                  <stop
+                    offset="5%"
+                    stopColor="var(--primary)"
+                    stopOpacity={0.8}
+                  />
+                  <stop
+                    offset="95%"
+                    stopColor="var(--primary)"
+                    stopOpacity={0.1}
+                  />
                 </linearGradient>
               </defs>
               <XAxis
@@ -79,13 +110,17 @@ export default function ElectionVotingChart({ data = [] }) {
                   });
                 }}
               />
-              <YAxis 
-                axisLine={false} 
-                tickLine={false} 
+              <YAxis
+                axisLine={false}
+                tickLine={false}
                 width={40}
                 tickFormatter={(value) => value}
               />
-              <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-muted/30" />
+              <CartesianGrid
+                vertical={false}
+                strokeDasharray="3 3"
+                className="stroke-muted/30"
+              />
               <Tooltip
                 content={({ active, payload, label }) => {
                   if (active && payload && payload.length) {
@@ -96,10 +131,12 @@ export default function ElectionVotingChart({ data = [] }) {
                             {new Date(label).toLocaleDateString("id-ID", {
                               day: "numeric",
                               month: "long",
-                              year: "numeric"
+                              year: "numeric",
                             })}
                           </div>
-                          <div className="text-sm font-bold">{payload[0].value} suara</div>
+                          <div className="text-sm font-bold">
+                            {payload[0].value} suara
+                          </div>
                         </CardContent>
                       </Card>
                     );
@@ -117,7 +154,10 @@ export default function ElectionVotingChart({ data = [] }) {
               />
             </AreaChart>
           ) : (
-            <BarChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+            <BarChart
+              data={data}
+              margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+            >
               <XAxis
                 dataKey="date"
                 axisLine={false}
@@ -130,13 +170,17 @@ export default function ElectionVotingChart({ data = [] }) {
                   });
                 }}
               />
-              <YAxis 
-                axisLine={false} 
-                tickLine={false} 
+              <YAxis
+                axisLine={false}
+                tickLine={false}
                 width={40}
                 tickFormatter={(value) => value}
               />
-              <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-muted/30" />
+              <CartesianGrid
+                vertical={false}
+                strokeDasharray="3 3"
+                className="stroke-muted/30"
+              />
               <Tooltip
                 content={({ active, payload, label }) => {
                   if (active && payload && payload.length) {
@@ -147,10 +191,12 @@ export default function ElectionVotingChart({ data = [] }) {
                             {new Date(label).toLocaleDateString("id-ID", {
                               day: "numeric",
                               month: "long",
-                              year: "numeric"
+                              year: "numeric",
                             })}
                           </div>
-                          <div className="text-sm font-bold">{payload[0].value} suara</div>
+                          <div className="text-sm font-bold">
+                            {payload[0].value} suara
+                          </div>
                         </CardContent>
                       </Card>
                     );
@@ -169,4 +215,4 @@ export default function ElectionVotingChart({ data = [] }) {
       </div>
     </div>
   );
-} 
+}
