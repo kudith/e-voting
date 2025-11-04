@@ -2,101 +2,49 @@
 
 import { useEffect, useState } from "react";
 import { BarChart4, ExternalLink, Vote } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 
-export default function TopElectionsStats({ isLoading = true }) {
+export default function TopElectionsStats({ isLoading }) {
   const [topElections, setTopElections] = useState([]);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchTopElections = async () => {
+    const fetchStats = async () => {
       try {
-        const response = await fetch('/api/election/results/getAllResults');
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch election results');
-        }
-        
-        const result = await response.json();
-        
+        const res = await fetch("/api/admin/dashboard/stats");
+        const result = await res.json();
         if (result.success) {
-          const { data } = result;
-          
-          // Get active elections with highest participation rate
-          const activeElections = data
-            .filter(election => election.status === "ACTIVE" && election.participation)
-            .sort((a, b) => parseFloat(b.participation.percentage) - parseFloat(a.participation.percentage))
-            .slice(0, 4)
-            .map(election => ({
-              id: election.id,
-              title: election.title,
-              participation: parseFloat(election.participation.percentage || 0),
-              totalVotes: election.totalVotes,
-              totalVoters: election.participation.totalVoters,
-              endsAt: new Date(election.endDate)
-            }));
-            
-          setTopElections(activeElections);
+          // Ambil pemilu populer dari status ACTIVE dan COMPLETED
+          const elections = result.data.elections
+            .filter((election) => election.status === "ACTIVE")
+            .sort((a, b) => b.totalVotes - a.totalVotes)
+            .slice(0, 5); // Top 5 aktif
+          setTopElections(elections);
         }
       } catch (error) {
-        console.error('Error fetching top elections:', error);
-        setError(error.message);
-        
-        // Fallback to placeholder data
-        setTopElections([
-          {
-            id: "placeholder-1",
-            title: "Pemilihan Ketua BEM 2025",
-            participation: 75.5,
-            totalVotes: 1250,
-            totalVoters: 1500,
-            endsAt: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000)
-          },
-          {
-            id: "placeholder-2",
-            title: "Pemilihan Ketua Himpunan Teknik",
-            participation: 68.2,
-            totalVotes: 420,
-            totalVoters: 600,
-            endsAt: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000)
-          },
-          {
-            id: "placeholder-3",
-            title: "Pemilihan Ketua Divisi Kesenian",
-            participation: 45.1,
-            totalVotes: 95,
-            totalVoters: 210,
-            endsAt: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000)
-          },
-          {
-            id: "placeholder-4",
-            title: "Pemilihan Perwakilan Fakultas",
-            participation: 32.8,
-            totalVotes: 180,
-            totalVoters: 550,
-            endsAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
-          }
-        ]);
+        setTopElections([]);
       }
     };
-
-    if (!isLoading) {
-      fetchTopElections();
-    }
-  }, [isLoading]);
+    fetchStats();
+  }, []);
 
   function formatTimeRemaining(date) {
     const now = new Date();
     const diff = date - now;
-    
+
     if (diff <= 0) return "Selesai";
-    
+
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
     const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    
+
     if (days > 0) return `${days} hari lagi`;
     return `${hours} jam lagi`;
   }
@@ -151,18 +99,27 @@ export default function TopElectionsStats({ isLoading = true }) {
             {topElections.map((election) => (
               <div key={election.id} className="space-y-2">
                 <div className="flex justify-between">
-                  <div className="font-medium text-sm truncate max-w-[220px]" title={election.title}>
+                  <div
+                    className="font-medium text-sm truncate max-w-[220px]"
+                    title={election.title}
+                  >
                     {election.title}
                   </div>
-                  <div className="text-sm font-semibold">{election.participation.toFixed(1)}%</div>
+                  <div className="text-sm font-semibold">
+                    {Number(election.participation?.percentage ?? 0).toFixed(1)}
+                    %
+                  </div>
                 </div>
-                <Progress value={election.participation} className={getProgressColor(election.participation)} />
+                <Progress
+                  value={election.participation}
+                  className={getProgressColor(election.participation)}
+                />
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <div className="flex items-center gap-1">
                     <Vote className="h-3 w-3" />
                     {election.totalVotes} / {election.totalVoters}
                   </div>
-                  <div>{formatTimeRemaining(election.endsAt)}</div>
+                  <div>{formatTimeRemaining(new Date(election.endDate))}</div>
                 </div>
               </div>
             ))}
@@ -179,4 +136,4 @@ export default function TopElectionsStats({ isLoading = true }) {
       </CardContent>
     </Card>
   );
-} 
+}

@@ -3,10 +3,19 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, useAnimation } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, ArrowLeft } from "lucide-react";
+import {
+  ArrowRight,
+  ArrowLeft,
+  Shield,
+  Lock,
+  CheckCircle2,
+} from "lucide-react";
 import StatsCounter from "./stats-counter";
 import useSWR from "swr";
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
+import { LoginLink } from "@kinde-oss/kinde-auth-nextjs/components";
+import { useKindeBrowserClient } from "@kinde-oss/kinde-auth-nextjs";
+import { useRouter } from "next/navigation";
 
 const fetcher = (url) => fetch(url).then((res) => res.json());
 
@@ -27,6 +36,8 @@ export default function HeroSection() {
   const [ongoingElections, setOngoingElections] = useState([]);
   const heroRef = useRef(null);
   const statsControls = useAnimation();
+  const { user, isAuthenticated } = useKindeBrowserClient();
+  const router = useRouter();
 
   // Fetch all elections
   const { data: elections, error } = useSWR(
@@ -37,8 +48,9 @@ export default function HeroSection() {
   // Filter ongoing elections
   useEffect(() => {
     if (elections) {
+      const electionsArray = Array.isArray(elections) ? elections : [];
       const now = new Date();
-      const filteredElections = elections.filter(
+      const filteredElections = electionsArray.filter(
         (election) =>
           new Date(election.startDate) <= now &&
           new Date(election.endDate) >= now &&
@@ -54,6 +66,12 @@ export default function HeroSection() {
       currentElectionIndex < ongoingElections.length - 1
     ) {
       setCurrentElectionIndex((prev) => prev + 1);
+    }
+  };
+
+  const handleStartButtonClick = () => {
+    if (isAuthenticated) {
+      router.push(user?.isAdmin ? "/admin/dashboard" : "/voter/dashboard");
     }
   };
 
@@ -149,7 +167,7 @@ export default function HeroSection() {
           }}
         />
 
-        {/* Small decorative particles - Using predefined positions to prevent hydration errors */}
+        {/* Small decorative particles */}
         <div className="absolute inset-0">
           {particlePositions.map((position, i) => (
             <motion.div
@@ -209,10 +227,54 @@ export default function HeroSection() {
               transition={{ duration: 0.6, delay: 0.4 }}
             >
               Rasakan pengalaman platform e-voting paling canggih dengan
-              keamanan terbaik, verifikasi blockchain, dan pemantauan hasil
-              secara langsung. SiPilih menghadirkan demokrasi digital dengan
-              integritas tanpa kompromi.
+              keamanan hybrid encryption (AES-256 + RSA-4096), hashing SHA-256,
+              dan pemantauan hasil secara langsung. SiPilih menghadirkan
+              demokrasi digital dengan integritas tanpa kompromi.
             </motion.p>
+
+            {/* Security Features */}
+            <motion.div
+              className="grid grid-cols-1 gap-3 mb-8"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+            >
+              <div className="flex items-start gap-3 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm rounded-lg p-3 border border-emerald-100 dark:border-emerald-900/30">
+                <Shield className="h-5 w-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="font-semibold text-sm text-gray-900 dark:text-gray-100">
+                    Hybrid Encryption
+                  </h3>
+                  <p className="text-xs text-gray-600 dark:text-gray-300">
+                    AES-256-GCM + RSA-4096 untuk keamanan berlapis
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm rounded-lg p-3 border border-emerald-100 dark:border-emerald-900/30">
+                <Lock className="h-5 w-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="font-semibold text-sm text-gray-900 dark:text-gray-100">
+                    SHA-256 Hashing
+                  </h3>
+                  <p className="text-xs text-gray-600 dark:text-gray-300">
+                    Verifikasi integritas suara dengan hash unik
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm rounded-lg p-3 border border-emerald-100 dark:border-emerald-900/30">
+                <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="font-semibold text-sm text-gray-900 dark:text-gray-100">
+                    Konfirmasi Real-time
+                  </h3>
+                  <p className="text-xs text-gray-600 dark:text-gray-300">
+                    Vote hash untuk verifikasi suara Anda tercatat
+                  </p>
+                </div>
+              </div>
+            </motion.div>
 
             <motion.div
               className="flex flex-col sm:flex-row gap-4"
@@ -220,12 +282,24 @@ export default function HeroSection() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.6 }}
             >
-              <Button
-                size="lg"
-                className="rounded-full px-8 gap-2 shadow-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 dark:from-emerald-500 dark:to-teal-500 hover:dark:from-emerald-600 hover:dark:to-teal-600 text-white hover:shadow-emerald-500/20 dark:hover:shadow-emerald-500/10 hover:scale-105 transition-all"
-              >
-                Mulai Sekarang <ArrowRight className="h-4 w-4" />
-              </Button>
+              {isAuthenticated ? (
+                <Button
+                  size="lg"
+                  className="rounded-full px-8 gap-2 shadow-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 dark:from-emerald-500 dark:to-teal-500 hover:dark:from-emerald-600 hover:dark:to-teal-600 text-white hover:shadow-emerald-500/20 dark:hover:shadow-emerald-500/10 hover:scale-105 transition-all"
+                  onClick={handleStartButtonClick}
+                >
+                  Mulai Sekarang <ArrowRight className="h-4 w-4" />
+                </Button>
+              ) : (
+                <LoginLink>
+                  <Button
+                    size="lg"
+                    className="rounded-full px-8 gap-2 shadow-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 dark:from-emerald-500 dark:to-teal-500 hover:dark:from-emerald-600 hover:dark:to-teal-600 text-white hover:shadow-emerald-500/20 dark:hover:shadow-emerald-500/10 hover:scale-105 transition-all"
+                  >
+                    Mulai Sekarang <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </LoginLink>
+              )}
               <Button
                 variant="outline"
                 size="lg"
@@ -242,7 +316,7 @@ export default function HeroSection() {
               </Button>
             </motion.div>
 
-            {/* Stats Counter - with enhanced styling */}
+            {/* Stats Counter */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -256,7 +330,7 @@ export default function HeroSection() {
             </motion.div>
           </div>
 
-          {/* Right column: Election Card - Positioned slightly higher */}
+          {/* Right column: Election Card */}
           <motion.div
             initial={{ opacity: 0, y: 60 }}
             animate={{ opacity: 1, y: 0 }}

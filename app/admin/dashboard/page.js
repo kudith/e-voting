@@ -147,9 +147,6 @@ export default function AdminDashboardPage() {
                         {dashboardStats.totalElections}
                       </CardTitle>
                     )}
-                    <div className="absolute right-4 top-4 rounded-full bg-primary/10 p-2 text-primary">
-                      <Vote className="h-4 w-4" />
-                    </div>
                   </CardHeader>
                   <CardFooter className="pt-2">
                     <div className="flex items-center text-xs text-muted-foreground">
@@ -174,9 +171,6 @@ export default function AdminDashboardPage() {
                         {formatNumber(dashboardStats.totalVotes)}
                       </CardTitle>
                     )}
-                    <div className="absolute right-4 top-4 rounded-full bg-blue-100 p-2 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400">
-                      <CheckCircle2 className="h-4 w-4" />
-                    </div>
                   </CardHeader>
                   <CardFooter className="pt-2">
                     {isLoading ? (
@@ -201,9 +195,6 @@ export default function AdminDashboardPage() {
                         {formatNumber(dashboardStats.totalVoters)}
                       </CardTitle>
                     )}
-                    <div className="absolute right-4 top-4 rounded-full bg-violet-100 p-2 text-violet-600 dark:bg-violet-900/50 dark:text-violet-400">
-                      <Users className="h-4 w-4" />
-                    </div>
                   </CardHeader>
                   <CardFooter className="pt-2">
                     {isLoading ? (
@@ -228,9 +219,6 @@ export default function AdminDashboardPage() {
                         {dashboardStats.upcomingElections}
                       </CardTitle>
                     )}
-                    <div className="absolute right-4 top-4 rounded-full bg-amber-100 p-2 text-amber-600 dark:bg-amber-900/50 dark:text-amber-400">
-                      <Calendar className="h-4 w-4" />
-                    </div>
                   </CardHeader>
                   <CardFooter className="pt-2">
                     {isLoading ? (

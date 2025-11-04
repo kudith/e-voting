@@ -1,32 +1,32 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { 
-  Calendar, 
-  Clock, 
-  ExternalLink, 
-  Plus, 
+import {
+  Calendar,
+  Clock,
+  ExternalLink,
+  Plus,
   Search,
-  Users
+  Users,
 } from "lucide-react";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -37,52 +37,67 @@ export default function UpcomingElectionsWidget() {
   const [filteredElections, setFilteredElections] = useState([]);
   const [error, setError] = useState(null);
 
+  // Fungsi normalisasi status
+  function mapStatus(status) {
+    switch (status) {
+      case "ongoing":
+        return "ACTIVE";
+      case "completed":
+        return "COMPLETED";
+      case "upcoming":
+        return "UPCOMING";
+      default:
+        return status?.toUpperCase?.() || status;
+    }
+  }
+
   useEffect(() => {
     const fetchUpcomingElections = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch('/api/election/results/getAllResults');
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch election results');
-        }
-        
+        const response = await fetch("/api/election/results/getAllResults");
+        if (!response.ok) throw new Error("Failed to fetch election results");
         const result = await response.json();
-        
         if (result.success) {
           const { data } = result;
-          
-          // Get upcoming and active elections
+          // Normalisasi status
           const elections = data
-            .filter(election => election.status === "UPCOMING" || election.status === "ACTIVE")
+            .map((election) => ({
+              ...election,
+              status: mapStatus(election.status),
+            }))
+            .filter(
+              (election) =>
+                election.status === "UPCOMING" || election.status === "ACTIVE"
+            )
             .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
-            .map(election => ({
+            .map((election) => ({
               id: election.id,
               title: election.title,
               startDate: new Date(election.startDate),
               endDate: new Date(election.endDate),
               status: election.status,
               totalVoters: election.participation?.totalVoters || 0,
-              description: election.description || ""
+              description: election.description || "",
             }));
-            
           setUpcomingElections(elections);
           setFilteredElections(elections);
         }
       } catch (error) {
-        console.error('Error fetching upcoming elections:', error);
+        console.error("Error fetching upcoming elections:", error);
         setError(error.message);
-        
+
         // Fallback to placeholder data
         const placeholderData = [
           {
             id: "placeholder-1",
             title: "Pemilihan Ketua BEM 2025",
-            description: "Pemilihan ketua dan wakil ketua BEM periode 2025-2026",
+            description:
+              "Pemilihan ketua dan wakil ketua BEM periode 2025-2026",
             startDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
             endDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
             status: "UPCOMING",
-            totalVoters: 1500
+            totalVoters: 1500,
           },
           {
             id: "placeholder-2",
@@ -91,7 +106,7 @@ export default function UpcomingElectionsWidget() {
             startDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
             endDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
             status: "ACTIVE",
-            totalVoters: 600
+            totalVoters: 600,
           },
           {
             id: "placeholder-3",
@@ -100,7 +115,7 @@ export default function UpcomingElectionsWidget() {
             startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
             endDate: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000),
             status: "UPCOMING",
-            totalVoters: 210
+            totalVoters: 210,
           },
           {
             id: "placeholder-4",
@@ -109,10 +124,10 @@ export default function UpcomingElectionsWidget() {
             startDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
             endDate: new Date(Date.now() + 11 * 24 * 60 * 60 * 1000),
             status: "UPCOMING",
-            totalVoters: 550
-          }
+            totalVoters: 550,
+          },
         ];
-        
+
         setUpcomingElections(placeholderData);
         setFilteredElections(placeholderData);
       } finally {
@@ -129,7 +144,7 @@ export default function UpcomingElectionsWidget() {
       setFilteredElections(upcomingElections);
     } else {
       const filtered = upcomingElections.filter(
-        election => 
+        (election) =>
           election.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
           election.description.toLowerCase().includes(searchQuery.toLowerCase())
       );
@@ -142,14 +157,14 @@ export default function UpcomingElectionsWidget() {
     return new Date(date).toLocaleDateString("id-ID", {
       day: "numeric",
       month: "short",
-      year: "numeric"
+      year: "numeric",
     });
   }
 
   // Calculate time remaining or elapsed
   function getTimeStatus(startDate, endDate) {
     const now = new Date();
-    
+
     if (now < startDate) {
       const days = Math.ceil((startDate - now) / (1000 * 60 * 60 * 24));
       return `Dimulai dalam ${days} hari`;
@@ -179,7 +194,7 @@ export default function UpcomingElectionsWidget() {
           </Button>
         </div>
       </CardHeader>
-      
+
       <CardContent>
         <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
           <div className="relative w-full sm:w-96">
@@ -192,19 +207,34 @@ export default function UpcomingElectionsWidget() {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          
+
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="gap-1 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400">
+            <Badge
+              variant="outline"
+              className="gap-1 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400"
+            >
               <Clock className="h-3 w-3" />
-              <span>Aktif: {upcomingElections.filter(e => e.status === "ACTIVE").length}</span>
+              <span>
+                Aktif:{" "}
+                {upcomingElections.filter((e) => e.status === "ACTIVE").length}
+              </span>
             </Badge>
-            <Badge variant="outline" className="gap-1 bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400">
+            <Badge
+              variant="outline"
+              className="gap-1 bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400"
+            >
               <Calendar className="h-3 w-3" />
-              <span>Mendatang: {upcomingElections.filter(e => e.status === "UPCOMING").length}</span>
+              <span>
+                Mendatang:{" "}
+                {
+                  upcomingElections.filter((e) => e.status === "UPCOMING")
+                    .length
+                }
+              </span>
             </Badge>
           </div>
         </div>
-        
+
         {isLoading ? (
           <div className="w-full overflow-auto">
             <Table>
@@ -219,10 +249,18 @@ export default function UpcomingElectionsWidget() {
               <TableBody>
                 {[...Array(5)].map((_, i) => (
                   <TableRow key={i}>
-                    <TableCell><Skeleton className="h-6 w-[250px]" /></TableCell>
-                    <TableCell><Skeleton className="h-6 w-[180px]" /></TableCell>
-                    <TableCell><Skeleton className="h-6 w-[100px]" /></TableCell>
-                    <TableCell className="text-right"><Skeleton className="h-6 w-[80px] ml-auto" /></TableCell>
+                    <TableCell>
+                      <Skeleton className="h-6 w-[250px]" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-6 w-[180px]" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-6 w-[100px]" />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Skeleton className="h-6 w-[80px] ml-auto" />
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -243,16 +281,26 @@ export default function UpcomingElectionsWidget() {
                 {filteredElections.map((election) => (
                   <TableRow key={election.id} className="hover:bg-muted/50">
                     <TableCell className="font-medium overflow-hidden">
-                      <div className="truncate max-w-[300px]" title={election.title}>
+                      <div
+                        className="truncate max-w-[300px]"
+                        title={election.title}
+                      >
                         {election.title}
                       </div>
-                      <div className="text-xs text-muted-foreground truncate max-w-[300px]" title={election.description}>
+                      <div
+                        className="text-xs text-muted-foreground truncate max-w-[300px]"
+                        title={election.description}
+                      >
                         {election.description}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="text-sm">{formatDate(election.startDate)}</div>
-                      <div className="text-xs text-muted-foreground">s/d {formatDate(election.endDate)}</div>
+                      <div className="text-sm">
+                        {formatDate(election.startDate)}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        s/d {formatDate(election.endDate)}
+                      </div>
                     </TableCell>
                     <TableCell>
                       {election.status === "ACTIVE" ? (
@@ -260,7 +308,10 @@ export default function UpcomingElectionsWidget() {
                           {getTimeStatus(election.startDate, election.endDate)}
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                        <Badge
+                          variant="outline"
+                          className="bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+                        >
                           {getTimeStatus(election.startDate, election.endDate)}
                         </Badge>
                       )}
@@ -281,16 +332,18 @@ export default function UpcomingElectionsWidget() {
             <Calendar className="h-16 w-16 text-muted-foreground/30 mb-4" />
             <h3 className="font-medium text-lg">Tidak ada pemilu mendatang</h3>
             <p className="text-muted-foreground max-w-sm mt-1">
-              Belum ada pemilu yang dijadwalkan atau sesuai dengan pencarian Anda
+              Belum ada pemilu yang dijadwalkan atau sesuai dengan pencarian
+              Anda
             </p>
           </div>
         )}
       </CardContent>
-      
+
       <CardFooter className="border-t bg-muted/50 px-6 py-3">
         <div className="flex items-center justify-between w-full">
           <span className="text-xs text-muted-foreground">
-            Menampilkan {filteredElections.length} dari {upcomingElections.length} pemilu
+            Menampilkan {filteredElections.length} dari{" "}
+            {upcomingElections.length} pemilu
           </span>
           <Button variant="outline" size="sm" className="gap-1" asChild>
             <a href="/admin/dashboard/elections">
@@ -302,4 +355,4 @@ export default function UpcomingElectionsWidget() {
       </CardFooter>
     </Card>
   );
-} 
+}
