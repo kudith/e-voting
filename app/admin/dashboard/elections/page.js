@@ -89,9 +89,7 @@ export default function ElectionsPage() {
     if (endDateFilter) {
       const endFilterDate = new Date(endDateFilter);
       endFilterDate.setHours(23, 59, 59, 999); // End of day
-      filtered = filtered.filter(
-        (e) => new Date(e.endDate) <= endFilterDate
-      );
+      filtered = filtered.filter((e) => new Date(e.endDate) <= endFilterDate);
     }
 
     if (sortConfig.key) {

@@ -218,16 +218,16 @@ model VoterElection {
   @@unique([voterId, electionId]) // Kombinasi unik pemilih dan pemilu
 }
 
-// Struktur Merkle Tree untuk integritas suara
-model MerkleTree {
-  id         String  @id @default(auto()) @map("_id") @db.ObjectId // ID unik node
-  voteHash   String  @unique // Hash suara
-  level      Int // Level node dalam pohon
-  position   Int // Posisi node dalam level
-  parentId   String? @db.ObjectId // ID parent node
-  parentHash String? // Hash parent node
-  isRoot     Boolean @default(false) // Apakah node ini adalah root
+// // Struktur Merkle Tree untuk integritas suara
+// model MerkleTree {
+//   id         String  @id @default(auto()) @map("_id") @db.ObjectId // ID unik node
+//   voteHash   String  @unique // Hash suara
+//   level      Int // Level node dalam pohon
+//   position   Int // Posisi node dalam level
+//   parentId   String? @db.ObjectId // ID parent node
+//   parentHash String? // Hash parent node
+//   isRoot     Boolean @default(false) // Apakah node ini adalah root
 
-  parent     MerkleTree?  @relation("ParentChild", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction) // Relasi ke parent node
-  children   MerkleTree[] @relation("ParentChild") // Relasi ke child node
-}
+//   parent     MerkleTree?  @relation("ParentChild", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction) // Relasi ke parent node
+//   children   MerkleTree[] @relation("ParentChild") // Relasi ke child node
+// }

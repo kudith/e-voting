@@ -27,32 +27,38 @@ export async function GET() {
             voterId: true,
             isEligible: true,
             hasVoted: true,
-          }
-        }
+          },
+        },
       },
       orderBy: {
-        createdAt: 'desc'
-      }
+        createdAt: "desc",
+      },
     });
 
     console.log(`Found ${elections.length} elections`);
 
     // Process elections to include additional statistics
-    const processedElections = elections.map(election => {
-      const sortedCandidates = [...election.candidates].sort((a, b) => b.voteCount - a.voteCount);
+    const processedElections = elections.map((election) => {
+      const sortedCandidates = [...election.candidates].sort(
+        (a, b) => b.voteCount - a.voteCount
+      );
       const winner = sortedCandidates[0] || null;
       const voteChart = sortedCandidates.map((c) => ({
         id: c.id,
         name: c.name,
         voteCount: c.voteCount,
-        percentage: election.totalVotes > 0 ? (c.voteCount / election.totalVotes * 100).toFixed(2) : "0.00",
+        percentage:
+          election.totalVotes > 0
+            ? ((c.voteCount / election.totalVotes) * 100).toFixed(2)
+            : "0.00",
       }));
 
       // Calculate participation statistics
       const totalVoters = election.voterElections.length;
-      const voted = election.voterElections.filter(ve => ve.hasVoted).length;
+      const voted = election.voterElections.filter((ve) => ve.hasVoted).length;
       const notVoted = totalVoters - voted;
-      const percentage = totalVoters > 0 ? ((voted / totalVoters) * 100).toFixed(2) : "0.00";
+      const percentage =
+        totalVoters > 0 ? ((voted / totalVoters) * 100).toFixed(2) : "0.00";
 
       return {
         id: election.id,
@@ -64,30 +70,45 @@ export async function GET() {
         totalVotes: election.totalVotes,
         statistics: election.statistics,
         candidates: voteChart,
-        winner: winner ? {
-          id: winner.id,
-          name: winner.name,
-          voteCount: winner.voteCount,
-          percentage: election.totalVotes > 0 ? (winner.voteCount / election.totalVotes * 100).toFixed(2) : "0.00",
-        } : null,
+        winner: winner
+          ? {
+              id: winner.id,
+              name: winner.name,
+              voteCount: winner.voteCount,
+              percentage:
+                election.totalVotes > 0
+                  ? ((winner.voteCount / election.totalVotes) * 100).toFixed(2)
+                  : "0.00",
+            }
+          : null,
         participation: {
           totalVoters,
           voted,
           notVoted,
-          percentage
-        }
+          percentage,
+        },
       };
     });
 
-    return NextResponse.json({ 
-      success: true, 
-      data: processedElections 
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        data: processedElections,
+      },
+      console.log(
+        `Returning results for ${processedElections.length} elections`
+      ),
+      console.log(processedElections),
+      { status: 200 }
+    );
   } catch (error) {
     console.error("Error fetching election results:", error);
-    return NextResponse.json({ 
-      success: false, 
-      error: error.message 
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: error.message,
+      },
+      { status: 500 }
+    );
   }
-} 
+}
