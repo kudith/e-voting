@@ -1,0 +1,20 @@
+{
+  "adminUser": {
+    "email": "admin@sipilih.com",
+    "role": "admin",
+    "name": "Admin User",
+    "permissions": ["create_election", "manage_voters", "view_results", "manage_candidates"]
+  },
+  "voterUser": {
+    "email": "voter@sipilih.com",
+    "role": "voter",
+    "name": "Voter User",
+    "nim": "1234567890",
+    "permissions": ["vote", "view_results"]
+  },
+  "unauthorizedUser": {
+    "email": "unauthorized@example.com",
+    "role": null,
+    "permissions": []
+  }
+}

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { sanitizeElectionData, deepSanitize } from "@/lib/sanitize";
 
 export async function GET() {
   try {
@@ -100,7 +101,19 @@ export async function GET() {
 
     // console.log("elections:", formattedElections);
 
-    return NextResponse.json(formattedElections, { status: 200 });
+    // Sanitize all election data before sending to client
+    const sanitizedElections = formattedElections.map(election => ({
+      ...sanitizeElectionData(election),
+      candidates: election.candidates.map(candidate => deepSanitize(candidate))
+    }));
+
+    return NextResponse.json(sanitizedElections, { 
+      status: 200,
+      headers: {
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'DENY',
+      }
+    });
   } catch (error) {
     console.error("[Elections API] Error:", error.message);
     return NextResponse.json(

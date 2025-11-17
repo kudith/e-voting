@@ -1,0 +1,48 @@
+{
+  "candidate1": {
+    "name": "John Doe",
+    "visionMission": "Visi: Membangun kampus yang lebih baik. Misi: Meningkatkan partisipasi mahasiswa.",
+    "number": 1,
+    "electionId": 1,
+    "photoUrl": "https://example.com/john.jpg"
+  },
+  "candidate2": {
+    "name": "Jane Smith",
+    "visionMission": "Visi: Kampus inklusif dan inovatif. Misi: Digitalisasi layanan kampus.",
+    "number": 2,
+    "electionId": 1,
+    "photoUrl": "https://example.com/jane.jpg"
+  },
+  "candidate3": {
+    "name": "Bob Wilson",
+    "visionMission": "Visi: Mahasiswa sejahtera dan berprestasi. Misi: Program beasiswa dan pelatihan.",
+    "number": 3,
+    "electionId": 1,
+    "photoUrl": "https://example.com/bob.jpg"
+  },
+  "invalidCandidate": {
+    "name": "",
+    "visionMission": "Missing required fields",
+    "number": null
+  },
+  "candidatesArray": [
+    {
+      "id": 1,
+      "name": "Candidate A",
+      "number": 1,
+      "votes": 150
+    },
+    {
+      "id": 2,
+      "name": "Candidate B",
+      "number": 2,
+      "votes": 120
+    },
+    {
+      "id": 3,
+      "name": "Candidate C",
+      "number": 3,
+      "votes": 80
+    }
+  ]
+}

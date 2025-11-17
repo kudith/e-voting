@@ -1,0 +1,41 @@
+{
+  "electionResults": {
+    "electionId": 1,
+    "title": "Pemilihan Ketua BEM 2024",
+    "totalVotes": 350,
+    "totalVoters": 500,
+    "turnoutPercentage": 70,
+    "status": "completed",
+    "results": [
+      {
+        "candidateId": 1,
+        "name": "John Doe",
+        "votes": 150,
+        "percentage": 42.86
+      },
+      {
+        "candidateId": 2,
+        "name": "Jane Smith",
+        "votes": 120,
+        "percentage": 34.29
+      },
+      {
+        "candidateId": 3,
+        "name": "Bob Wilson",
+        "votes": 80,
+        "percentage": 22.86
+      }
+    ],
+    "winner": {
+      "candidateId": 1,
+      "name": "John Doe",
+      "votes": 150
+    }
+  },
+  "liveResults": {
+    "electionId": 1,
+    "isLive": true,
+    "currentVotes": 245,
+    "lastUpdated": "2024-11-09T10:30:00.000Z"
+  }
+}

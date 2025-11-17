@@ -1,0 +1,44 @@
+{
+  "validVoter": {
+    "email": "voter1@example.com",
+    "name": "Test Voter 1",
+    "nim": "1234567890",
+    "facultyId": 1,
+    "majorId": 1
+  },
+  "anotherVoter": {
+    "email": "voter2@example.com",
+    "name": "Test Voter 2",
+    "nim": "0987654321",
+    "facultyId": 2,
+    "majorId": 2
+  },
+  "invalidVoter": {
+    "email": "invalid-email",
+    "name": "",
+    "nim": "123"
+  },
+  "votersArray": [
+    {
+      "id": 1,
+      "email": "voter1@test.com",
+      "name": "Voter One",
+      "nim": "1111111111",
+      "hasVoted": false
+    },
+    {
+      "id": 2,
+      "email": "voter2@test.com",
+      "name": "Voter Two",
+      "nim": "2222222222",
+      "hasVoted": true
+    },
+    {
+      "id": 3,
+      "email": "voter3@test.com",
+      "name": "Voter Three",
+      "nim": "3333333333",
+      "hasVoted": false
+    }
+  ]
+}

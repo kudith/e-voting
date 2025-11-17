@@ -1,0 +1,37 @@
+{
+  "validElection": {
+    "title": "Pemilihan Ketua BEM 2024",
+    "description": "Pemilihan Ketua Badan Eksekutif Mahasiswa periode 2024-2025",
+    "startDate": "2024-01-01T00:00:00.000Z",
+    "endDate": "2024-12-31T23:59:59.000Z",
+    "facultyId": 1,
+    "type": "BEM"
+  },
+  "invalidElection": {
+    "title": "",
+    "description": "Invalid election without title",
+    "startDate": "2024-01-01",
+    "endDate": "2024-01-02"
+  },
+  "activeElection": {
+    "id": 1,
+    "title": "Pemilihan Aktif Test",
+    "status": "active",
+    "startDate": "2024-01-01T00:00:00.000Z",
+    "endDate": "2025-12-31T23:59:59.000Z"
+  },
+  "pastElection": {
+    "id": 2,
+    "title": "Pemilihan Selesai Test",
+    "status": "completed",
+    "startDate": "2023-01-01T00:00:00.000Z",
+    "endDate": "2023-12-31T23:59:59.000Z"
+  },
+  "futureElection": {
+    "id": 3,
+    "title": "Pemilihan Mendatang Test",
+    "status": "upcoming",
+    "startDate": "2026-01-01T00:00:00.000Z",
+    "endDate": "2026-12-31T23:59:59.000Z"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "validVote": {
+    "electionId": 1,
+    "candidateId": 1,
+    "voterId": 1,
+    "encryptedVote": "encrypted_data_here",
+    "voteHash": "sha256_hash_here"
+  },
+  "voteSubmission": {
+    "candidateNumber": 1,
+    "electionId": 1,
+    "confirmation": true
+  },
+  "voteReceipt": {
+    "voteId": "unique-vote-id-123",
+    "timestamp": "2024-11-09T10:30:00.000Z",
+    "electionTitle": "Pemilihan Ketua BEM 2024",
+    "hash": "a1b2c3d4e5f6...",
+    "verified": true
+  },
+  "encryptedVoteData": {
+    "iv": "initialization_vector",
+    "encryptedData": "encrypted_vote_content",
+    "tag": "authentication_tag",
+    "encryptedKey": "rsa_encrypted_aes_key"
+  }
+}

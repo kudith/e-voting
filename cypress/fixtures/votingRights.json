@@ -1,0 +1,32 @@
+{
+  "validVotingRight": {
+    "voterId": 1,
+    "electionId": 1,
+    "granted": true,
+    "grantedBy": "admin@example.com",
+    "grantedAt": "2024-01-01T00:00:00.000Z"
+  },
+  "votingRightsArray": [
+    {
+      "id": 1,
+      "voterId": 1,
+      "electionId": 1,
+      "granted": true,
+      "hasVoted": false
+    },
+    {
+      "id": 2,
+      "voterId": 2,
+      "electionId": 1,
+      "granted": true,
+      "hasVoted": true
+    },
+    {
+      "id": 3,
+      "voterId": 3,
+      "electionId": 2,
+      "granted": false,
+      "hasVoted": false
+    }
+  ]
+}
