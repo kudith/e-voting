@@ -216,9 +216,8 @@ export default function VotersTable({
                 </TableRow>
               ) : (
                 voters.map((voter, index) => (
-                  <motion.tr
+                  <TableRow
                     key={voter.id}
-                    variants={rowAnimation}
                     className={cn(
                       "border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",
                       selectedVoters.includes(voter.id) && "bg-muted/30"
@@ -320,7 +319,7 @@ export default function VotersTable({
                         </Button>
                       </div>
                     </TableCell>
-                  </motion.tr>
+                  </TableRow>
                 ))
               )}
             </TableBody>

@@ -44,6 +44,7 @@ model Voter {
   id           String      @id @default(auto()) @map("_id") @db.ObjectId // ID unik pemilih
   kindeId      String      @unique // ID unik internal
   voterCode    String      @unique // Kode unik pemilih
+  npm          String      @unique // NPM (Nomor Pokok Mahasiswa) - digunakan sebagai username
   name         String // Nama pemilih
   email        String      @unique // Email pemilih
   phone        String // Nomor telepon pemilih

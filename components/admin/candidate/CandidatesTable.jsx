@@ -264,9 +264,8 @@ export default function CandidatesTable({
                   </TableRow>
                 ) : (
                   candidates.map((candidate, index) => (
-                    <motion.tr
+                    <TableRow
                       key={candidate.id}
-                      variants={rowAnimation}
                       className={cn(
                         "border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",
                         selectedCandidates.includes(candidate.id) && "bg-muted/30"
@@ -425,7 +424,7 @@ export default function CandidatesTable({
                           </Button>
                         </div>
                       </TableCell>
-                    </motion.tr>
+                    </TableRow>
                   ))
                 )}
               </TableBody>

@@ -137,6 +137,7 @@ export async function POST(req) {
                   data: {
                     kindeId: kindeUser.id,
                     voterCode: voterCode,
+                    npm: data.npm,
                     name: data.name,
                     email: data.email,
                     phone: data.phone,
@@ -191,6 +192,7 @@ export async function POST(req) {
       await prisma.voter.create({
         data: {
           kindeId: kindeUser.id,
+          voterCode: voterCode,
           npm: data.npm,
           name: data.name,
           email: data.email,
@@ -198,8 +200,7 @@ export async function POST(req) {
           facultyId: data.facultyId,
           majorId: data.majorId,
           year: data.year,
-          status: "active",
-          voterCode: voterCode
+          status: "active"
         }
       });
 
