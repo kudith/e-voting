@@ -1,0 +1,30 @@
+{
+  "name": "e-voting-testing-dependencies",
+  "description": "Install these testing dependencies to package.json",
+  "instructions": "Run: npm install --save-dev jest @testing-library/jest-dom @testing-library/react babel-jest @babel/core @babel/preset-env @babel/preset-react jest-environment-node",
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "@testing-library/jest-dom": "^6.1.5",
+    "@testing-library/react": "^14.1.2",
+    "babel-jest": "^29.7.0",
+    "@babel/core": "^7.23.5",
+    "@babel/preset-env": "^7.23.5",
+    "@babel/preset-react": "^7.23.3",
+    "jest-environment-node": "^29.7.0"
+  },
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:verbose": "jest --verbose",
+    "test:unit": "jest __tests__/lib",
+    "test:integration": "jest __tests__/api",
+    "test:middleware": "jest __tests__/middleware.test.js",
+    "test:encryption": "jest __tests__/lib/encryption.test.js",
+    "test:submit": "jest __tests__/api/vote/submitVote.test.js",
+    "test:count": "jest __tests__/api/vote/countVotes.test.js",
+    "test:verify": "jest __tests__/api/vote/verifyVote.test.js"
+  }
+}
+
+
