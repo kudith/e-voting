@@ -15,11 +15,11 @@ export async function middleware(request) {
     const permissions = accessToken?.permissions || [];
 
     // --- Logging untuk Debugging (opsional, bisa dihapus di production) ---
-    // console.log(`[Middleware] Path: ${request.nextUrl.pathname}`);
-    // console.log(`[Middleware] User: ${user?.email || 'Unknown'}`);
-    // console.log(`[Middleware] Authenticated: ${authenticated}`);
-    // console.log(`[Middleware] Role List: ${roleList.join(', ')}`);
-    // console.log(`[Middleware] Permissions: ${permissions.join(', ')}`);
+    console.log(`[Middleware] Path: ${request.nextUrl.pathname}`);
+    console.log(`[Middleware] User: ${user?.email || 'Unknown'}`);
+    console.log(`[Middleware] Authenticated: ${authenticated}`);
+    console.log(`[Middleware] Role List: ${roleList.join(', ')}`);
+    console.log(`[Middleware] Permissions: ${permissions.join(', ')}`);
     // --- Akhir Logging ---
 
     // Kontrol akses untuk /admin
