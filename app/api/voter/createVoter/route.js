@@ -8,9 +8,10 @@ dotenv.config();
 const KINDE_API_URL = process.env.KINDE_API_URL;
 const KINDE_API_KEY = process.env.KINDE_API_KEY;
 
-// Zod schema for input validation
+// Update the Zod schema to use npm instead of email for login
 const voterSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters"),
+  npm: z.string().regex(/^\d{9}$/, "NPM must be a 9-digit number"),
   email: z.string().email("Invalid email format"),
   phone: z
     .string()
@@ -78,10 +79,9 @@ export async function POST(req) {
             is_verified: true,
             details: { email: data.email },
           },
-          // We'll add phone identity after user creation to avoid conflicts
           {
             type: "username",
-            details: { username: voterCode },
+            details: { username: data.npm },
           },
         ],
       }),
@@ -120,67 +120,59 @@ export async function POST(req) {
             { status: 409 }
           );
         } else {
-          // Coba pengecekan email dan nomor telepon secara manual
+          // Fetch user from Kinde and sync to local DB
           try {
-            // Cek email
-            const emailCheckRes = await fetch(`${KINDE_API_URL}/api/v1/users?email=${encodeURIComponent(data.email)}`, {
+            const kindeUserRes = await fetch(`${KINDE_API_URL}/api/v1/users?email=${encodeURIComponent(data.email)}`, {
               method: "GET",
               headers: {
                 Authorization: `Bearer ${KINDE_API_KEY}`,
               },
             });
-            
-            const emailExists = emailCheckRes.ok && 
-              (await emailCheckRes.json()).users?.length > 0;
-            
-            // Cek nomor telepon (hapus prefix +62 untuk perbandingan)
-            const phone = data.phone.replace(/^\+62/, '');
-            const phoneCheckRes = await fetch(`${KINDE_API_URL}/api/v1/users`, {
-              method: "GET",
-              headers: {
-                Authorization: `Bearer ${KINDE_API_KEY}`,
+            if (kindeUserRes.ok) {
+              const kindeUsers = (await kindeUserRes.json()).users;
+              if (kindeUsers && kindeUsers.length > 0) {
+                const kindeUser = kindeUsers[0];
+                // Save voter to database
+                await prisma.voter.create({
+                  data: {
+                    kindeId: kindeUser.id,
+                    voterCode: voterCode,
+                    name: data.name,
+                    email: data.email,
+                    phone: data.phone,
+                    facultyId: data.facultyId,
+                    majorId: data.majorId,
+                    year: data.year,
+                    status: "active"
+                  }
+                });
+                return NextResponse.json(
+                  { 
+                    message: "Voter synced from Kinde and created successfully.",
+                    npm: data.npm,
+                    email: data.email,
+                    instructions: `Voter telah disinkronkan dari Kinde. Email: ${data.email}`
+                  },
+                  { status: 201 }
+                );
+              }
+            }
+            // If not found, fallback to conflict error
+            return NextResponse.json(
+              { 
+                error: "Terjadi konflik dengan sistem autentikasi. Silakan coba dengan email dan nomor telepon yang berbeda.",
+                detail: "Sistem mendeteksi data serupa yang sudah terdaftar",
+                kindeError: kindeError
               },
-            });
-            
-            let phoneExists = false;
-            if (phoneCheckRes.ok) {
-              const users = (await phoneCheckRes.json()).users || [];
-              phoneExists = users.some(user => 
-                user.phone && user.phone.replace(/^\+62/, '') === phone
-              );
-            }
-            
-            if (emailExists) {
-              return NextResponse.json({
-                error: "Email sudah terdaftar dalam sistem. Silakan gunakan email lain.",
-                detail: "Terdeteksi email yang sama di sistem"
-              }, { status: 409 });
-            }
-            
-            if (phoneExists) {
-              return NextResponse.json({
-                error: "Nomor telepon sudah terdaftar dalam sistem. Silakan gunakan nomor telepon lain.",
-                detail: "Terdeteksi nomor telepon yang sama di sistem"
-              }, { status: 409 });
-            }
-          } catch (checkError) {
-            console.error("[CHECK ERROR]:", checkError);
+              { status: 409 }
+            );
+          } catch (syncError) {
+            console.error("[KINDE SYNC ERROR]:", syncError);
+            return NextResponse.json(
+              { error: "Gagal sinkronisasi user dari Kinde.", kindeError: kindeError },
+              { status: 500 }
+            );
           }
-          
-          // Jika tidak ada di database kita, berarti ada masalah dengan Kinde
-          console.error("[KINDE CONFLICT]: User exists in Kinde but not in our database", {
-            email: data.email,
-            phone: data.phone
-          });
-          
-          return NextResponse.json(
-            { 
-              error: "Terjadi konflik dengan sistem autentikasi. Silakan coba dengan email dan nomor telepon yang berbeda.",
-              detail: "Sistem mendeteksi data serupa yang sudah terdaftar",
-              kindeError: kindeError
-            },
-            { status: 409 }
-          );
         }
       }
       
@@ -196,23 +188,54 @@ export async function POST(req) {
     const kindeUser = await kindeRes.json();
 
     // Save voter to database
-    await prisma.voter.create({
-      data: {
-        kindeId: kindeUser.id,
-        voterCode,
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
-        facultyId: data.facultyId,
-        majorId: data.majorId,
-        year: data.year,
-        status: data.status,
-      },
-    });
+      await prisma.voter.create({
+        data: {
+          kindeId: kindeUser.id,
+          npm: data.npm,
+          name: data.name,
+          email: data.email,
+          phone: data.phone,
+          facultyId: data.facultyId,
+          majorId: data.majorId,
+          year: data.year,
+          status: "active",
+          voterCode: voterCode
+        }
+      });
 
-    // Professional response
+    // Send password reset email automatically
+    try {
+      // Kinde API endpoint yang benar untuk send password reset
+      const passwordResetRes = await fetch(`${KINDE_API_URL}/api/v1/users/${kindeUser.id}/password_reset`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${KINDE_API_KEY}`,
+        },
+        body: JSON.stringify({
+          redirect_url: `${process.env.KINDE_SITE_URL}/api/auth/login`
+        }),
+      });
+
+      if (passwordResetRes.ok) {
+        console.log(`[PASSWORD RESET EMAIL SENT]: Email sent to ${data.email}`);
+      } else {
+        const errorText = await passwordResetRes.text();
+        console.warn(`[PASSWORD RESET WARNING]: Could not send email - ${errorText}`);
+      }
+    } catch (emailError) {
+      console.warn("[PASSWORD RESET ERROR]:", emailError);
+      // Don't fail the whole request if email fails
+    }
+
+    // Professional response with instructions
     return NextResponse.json(
-      { message: "Voter created successfully" },
+      { 
+        message: "Voter created successfully. Password setup email has been sent to voter's email.",
+        npm: data.npm,
+        email: data.email,
+        instructions: `Email telah dikirim ke ${data.email}. Voter harus cek email dan set password untuk login pertama kali dengan username: ${data.npm}`
+      },
       { status: 201 }
     );
   } catch (err) {

@@ -6,13 +6,28 @@ import prisma from "@/lib/prisma";
 
 dotenv.config();
 
-// Zod schema untuk validasi input
+// Zod schema untuk validasi input - Semua field optional kecuali yang wajib
 const socialMediaSchema = z.object({
-    twitter: z.string().url().optional().nullable(),
-    facebook: z.string().url().optional().nullable(),
-    instagram: z.string().url().optional().nullable(),
-    linkedin: z.string().url().optional().nullable(),
-    website: z.string().url().optional().nullable(),
+    twitter: z.string().optional().or(z.literal("")).refine(
+        (val) => !val || val === "" || z.string().url().safeParse(val).success,
+        { message: "Invalid Twitter URL" }
+    ),
+    facebook: z.string().optional().or(z.literal("")).refine(
+        (val) => !val || val === "" || z.string().url().safeParse(val).success,
+        { message: "Invalid Facebook URL" }
+    ),
+    instagram: z.string().optional().or(z.literal("")).refine(
+        (val) => !val || val === "" || z.string().url().safeParse(val).success,
+        { message: "Invalid Instagram URL" }
+    ),
+    linkedin: z.string().optional().or(z.literal("")).refine(
+        (val) => !val || val === "" || z.string().url().safeParse(val).success,
+        { message: "Invalid LinkedIn URL" }
+    ),
+    website: z.string().optional().or(z.literal("")).refine(
+        (val) => !val || val === "" || z.string().url().safeParse(val).success,
+        { message: "Invalid Website URL" }
+    ),
 });
 
 const educationSchema = z.object({
@@ -51,13 +66,14 @@ const candidateSchema = z.object({
     vision: z.string().min(10, "Vision must be at least 10 characters"),
     mission: z.string().min(10, "Mission must be at least 10 characters"),
     shortBio: z.string().min(10, "Short bio must be at least 10 characters"),
-    details: z.string().min(20, "Details must be at least 20 characters"),
     electionId: z.string().min(1, "Election ID is required"),
+    // Field optional - tidak wajib diisi
+    details: z.string().optional().or(z.literal("")),
     socialMedia: socialMediaSchema.optional(),
-    education: z.array(educationSchema).min(1, "At least one education entry is required"),
-    experience: z.array(experienceSchema).min(1, "At least one experience entry is required"),
-    achievements: z.array(achievementSchema).optional(),
-    programs: z.array(programSchema).min(1, "At least one program entry is required"),
+    education: z.array(educationSchema).optional().default([]),
+    experience: z.array(experienceSchema).optional().default([]),
+    achievements: z.array(achievementSchema).optional().default([]),
+    programs: z.array(programSchema).optional().default([]),
     stats: statsSchema.optional(),
 });
 
@@ -103,23 +119,25 @@ export async function POST(req) {
                 vision: data.vision,
                 mission: data.mission,
                 shortBio: data.shortBio,
-                details: data.details,
-                electionId: data.electionId,
-                socialMedia: data.socialMedia ? {
+                details: data.details || "",
+                election: {
+                    connect: { id: data.electionId }
+                },
+                socialMedia: data.socialMedia && Object.values(data.socialMedia).some(v => v && v !== "") ? {
                     create: data.socialMedia
                 } : undefined,
-                education: {
+                education: data.education && data.education.length > 0 ? {
                     create: data.education
-                },
-                experience: {
+                } : undefined,
+                experience: data.experience && data.experience.length > 0 ? {
                     create: data.experience
-                },
-                achievements: data.achievements ? {
+                } : undefined,
+                achievements: data.achievements && data.achievements.length > 0 ? {
                     create: data.achievements
                 } : undefined,
-                programs: {
+                programs: data.programs && data.programs.length > 0 ? {
                     create: data.programs
-                },
+                } : undefined,
                 stats: data.stats ? {
                     create: data.stats
                 } : undefined,

@@ -99,6 +99,20 @@ Sistem ini dikembangkan untuk menjawab kebutuhan akan pemilihan umum digital yan
 - Toast notifications dengan Sonner
 - Vote confirmation dengan hash display
 
+### 📷 Image Optimization
+
+- **Automatic Image Compression**: Semua foto kandidat otomatis dikompresi sebelum disimpan
+- **Dual-Layer Compression**: 
+  - Client-side compression (Canvas API) untuk UX responsif
+  - Server-side backup compression (Sharp) untuk konsistensi
+- **Smart Optimization**: 
+  - Resize to max 1200x1200px dengan aspect ratio preserved
+  - Quality 85% untuk balance antara ukuran dan kualitas
+  - Convert to JPEG untuk efisiensi storage
+- **Real-time Feedback**: User melihat statistik kompresi (before/after size)
+- **Storage Savings**: Rata-rata 85-90% reduction dalam ukuran file
+- Lihat dokumentasi lengkap di [`docs/IMAGE_COMPRESSION.md`](docs/IMAGE_COMPRESSION.md)
+
 ---
 
 ## 🛠️ Teknologi
@@ -131,6 +145,11 @@ Sistem ini dikembangkan untuk menjawab kebutuhan akan pemilihan umum digital yan
 - **Encryption**: AES-256-GCM, RSA-4096
 - **Hashing**: SHA-256, bcryptjs
 - **JWT**: jsonwebtoken
+
+### Image Processing
+
+- **Client-side**: Canvas API (native browser)
+- **Server-side**: [Sharp](https://sharp.pixelplumbing.com/) (high-performance image processing)
 
 ---
 

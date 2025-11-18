@@ -248,10 +248,7 @@ export default function Navbar({
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator className="bg-slate-200/50 dark:bg-slate-700/50" />
                     <DropdownMenuGroup>
-                      <DropdownMenuItem className="cursor-pointer hover:bg-slate-100/50 dark:hover:bg-slate-800/50 rounded-md transition-colors">
-                        <User className="mr-2 h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                        <span>Profil</span>
-                      </DropdownMenuItem>
+                     
                     </DropdownMenuGroup>
                     <DropdownMenuSeparator className="bg-slate-200/50 dark:bg-slate-700/50" />
                     <LogoutLink>

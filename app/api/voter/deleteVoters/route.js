@@ -16,18 +16,19 @@ export async function POST(req) {
 
         console.log(`Bulk deleting ${voterIds.length} voters`);
 
-        // Ambil data voters beserta vote-nya dari database
+        // Ambil data voters beserta relasi dari database
         const voters = await prisma.voter.findMany({
             where: { 
                 id: { in: voterIds } 
             },
             include: {
-                votes: {
+                voterElections: {
                     include: {
-                        candidate: true,
                         election: true
                     }
-                }
+                },
+                faculty: true,
+                major: true
             }
         });
 
@@ -40,34 +41,18 @@ export async function POST(req) {
         await prisma.$transaction(async (tx) => {
             // Proses setiap voter
             for (const voter of voters) {
-                // Jika voter memiliki vote, kurangi vote count kandidat
-                if (voter.votes) {
-                    console.log("Reducing vote count for candidate:", voter.votes.candidate?.id);
-                    
-                    // Update vote count kandidat
-                    await tx.candidate.update({
-                        where: { id: voter.votes.candidateId },
-                        data: {
-                            voteCount: {
-                                decrement: 1
-                            }
-                        }
-                    });
-
-                    // Update total votes di election
-                    await tx.election.update({
-                        where: { id: voter.votes.electionId },
-                        data: {
-                            totalVotes: {
-                                decrement: 1
-                            }
-                        }
-                    });
-
-                    // Hapus vote
-                    await tx.vote.delete({
-                        where: { voterId: voter.id }
-                    });
+                // Cek apakah voter punya vote di VoterElection yang sudah memilih (hasVoted = true)
+                const votedElections = voter.voterElections.filter(ve => ve.hasVoted);
+                
+                if (votedElections.length > 0) {
+                    for (const voterElection of votedElections) {
+                        // Cari vote terkait (jika ada model Vote terpisah)
+                        // Untuk sekarang kita hanya perlu hapus voterElection
+                        console.log(`Voter ${voter.voterCode} has voted in election: ${voterElection.election.title}`);
+                        
+                        // TODO: Jika ada model Vote terpisah, kurangi vote count kandidat di sini
+                        // Untuk sekarang sistem menggunakan hasVoted flag di VoterElection
+                    }
                 }
 
                 // Hapus voter elections

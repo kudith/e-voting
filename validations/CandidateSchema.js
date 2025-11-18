@@ -1,12 +1,27 @@
 import { z } from "zod";
 
-// Social media schema
+// Social media schema - All fields optional and allow empty strings
 const socialMediaSchema = z.object({
-  twitter: z.string().url("URL Twitter tidak valid").optional().or(z.literal("")),
-  facebook: z.string().url("URL Facebook tidak valid").optional().or(z.literal("")),
-  instagram: z.string().url("URL Instagram tidak valid").optional().or(z.literal("")),
-  linkedin: z.string().url("URL LinkedIn tidak valid").optional().or(z.literal("")),
-  website: z.string().url("URL Website tidak valid").optional().or(z.literal("")),
+  twitter: z.string().optional().or(z.literal("")).refine(
+    (val) => !val || val === "" || z.string().url().safeParse(val).success,
+    { message: "URL Twitter tidak valid" }
+  ),
+  facebook: z.string().optional().or(z.literal("")).refine(
+    (val) => !val || val === "" || z.string().url().safeParse(val).success,
+    { message: "URL Facebook tidak valid" }
+  ),
+  instagram: z.string().optional().or(z.literal("")).refine(
+    (val) => !val || val === "" || z.string().url().safeParse(val).success,
+    { message: "URL Instagram tidak valid" }
+  ),
+  linkedin: z.string().optional().or(z.literal("")).refine(
+    (val) => !val || val === "" || z.string().url().safeParse(val).success,
+    { message: "URL LinkedIn tidak valid" }
+  ),
+  website: z.string().optional().or(z.literal("")).refine(
+    (val) => !val || val === "" || z.string().url().safeParse(val).success,
+    { message: "URL Website tidak valid" }
+  ),
 });
 
 // Education schema
@@ -53,7 +68,24 @@ export const candidateSchema = z.object({
     .string()
     .min(3, "Nama kandidat harus memiliki minimal 3 karakter")
     .max(100, "Nama kandidat maksimal 100 karakter"),
-  photo: z.string().url("URL foto tidak valid. Harus berupa URL yang valid."),
+  photo: z
+    .string()
+    .refine(
+      (val) => {
+        // Allow empty string (will be filled after upload)
+        if (val === "") return true;
+        // Check if it's a valid URL
+        try {
+          new URL(val);
+          return true;
+        } catch {
+          return false;
+        }
+      },
+      { message: "URL foto tidak valid" }
+    )
+    .optional()
+    .or(z.literal("")),
   vision: z
     .string()
     .min(10, "Visi harus memiliki minimal 10 karakter")
@@ -68,16 +100,18 @@ export const candidateSchema = z.object({
     .max(300, "Bio singkat maksimal 300 karakter"),
   electionId: z.string().min(1, "Pemilihan wajib dipilih"),
   
-  // New detailed fields
+  // New detailed fields - Optional, allow empty
   details: z
     .string()
-    .min(10, "Detail biografi harus memiliki minimal 10 karakter")
-    .max(2000, "Detail biografi maksimal 1000 karakter")
     .optional()
-    .or(z.literal("")),
+    .or(z.literal(""))
+    .refine(
+      (val) => !val || val === "" || val.length >= 10,
+      { message: "Detail biografi harus memiliki minimal 10 karakter" }
+    ),
   
-  // Related models
-  socialMedia: socialMediaSchema.optional().or(z.literal("")),
+  // Related models - All optional
+  socialMedia: socialMediaSchema.optional(),
   education: z.array(educationSchema).optional().default([]),
   experience: z.array(experienceSchema).optional().default([]),
   achievements: z.array(achievementSchema).optional().default([]),

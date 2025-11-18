@@ -67,9 +67,14 @@ import {
   Award,
   MessageSquare,
   BarChart,
-  Mail
+  Mail,
+  Upload,
+  Loader2,
+  X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { compressImage, formatFileSize } from "@/lib/imageCompression";
 
 export default function CandidatesForm({
   isOpen,
@@ -79,6 +84,12 @@ export default function CandidatesForm({
   elections,
 }) {
   const [activeTab, setActiveTab] = useState("basic");
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState("");
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [isCompressing, setIsCompressing] = useState(false);
+  const [compressionInfo, setCompressionInfo] = useState(null);
+  
   const {
     register,
     handleSubmit,
@@ -152,6 +163,8 @@ export default function CandidatesForm({
             publicSupport: 0,
           },
         });
+        // Set photo preview if candidate has photo
+        setPhotoPreview(candidate.photo || "");
       } else {
         reset({
           name: "",
@@ -179,12 +192,149 @@ export default function CandidatesForm({
             publicSupport: 0,
           },
         });
+        setPhotoPreview("");
+        setPhotoFile(null);
+        setCompressionInfo(null);
       }
     }
   }, [isOpen, candidate, reset]);
 
-  const onSubmit = (formData) => {
-    onSave(formData);
+  // Handle file upload
+  const handlePhotoUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      toast.error("File harus berupa gambar", {
+        description: "Silakan pilih file gambar (JPG, PNG, dll.)",
+      });
+      return;
+    }
+
+    // Validate file size (max 10MB untuk file asli)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Ukuran file terlalu besar", {
+        description: "Ukuran maksimal file adalah 10MB",
+      });
+      return;
+    }
+
+    try {
+      setIsCompressing(true);
+      const originalSize = file.size;
+
+      // Kompresi gambar sebelum upload
+      toast.info("Mengkompresi gambar...", {
+        description: "Harap tunggu sebentar",
+      });
+
+      const compressedFile = await compressImage(file, {
+        maxWidth: 1200,
+        maxHeight: 1200,
+        quality: 0.85,
+        mimeType: 'image/jpeg',
+      });
+
+      const compressedSize = compressedFile.size;
+      const compressionRatio = ((1 - compressedSize / originalSize) * 100).toFixed(1);
+
+      // Simpan info kompresi
+      setCompressionInfo({
+        originalSize: formatFileSize(originalSize),
+        compressedSize: formatFileSize(compressedSize),
+        compressionRatio: compressionRatio,
+      });
+
+      // Create preview dari file yang sudah dikompresi
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoPreview(reader.result);
+      };
+      reader.readAsDataURL(compressedFile);
+
+      setPhotoFile(compressedFile);
+      
+      // Set photo field kosong saat upload file (akan diisi setelah upload sukses)
+      setValue("photo", "", { shouldValidate: false });
+      
+      toast.success("Gambar berhasil dikompresi", {
+        description: `Ukuran dikurangi ${compressionRatio}% (${formatFileSize(originalSize)} → ${formatFileSize(compressedSize)})`,
+      });
+
+      setIsCompressing(false);
+    } catch (error) {
+      console.error("Error compressing image:", error);
+      toast.error("Gagal mengkompresi gambar", {
+        description: error.message || "Silakan coba lagi",
+      });
+      setIsCompressing(false);
+    }
+  };
+
+  // Remove photo
+  const handleRemovePhoto = () => {
+    setPhotoFile(null);
+    setPhotoPreview("");
+    setValue("photo", "");
+    setCompressionInfo(null);
+    // Clear file input
+    const fileInput = document.getElementById("photoFile");
+    if (fileInput) fileInput.value = "";
+  };
+
+  const onSubmit = async (formData) => {
+    try {
+      let photoUrl = formData.photo;
+
+      // Upload photo if a new file is selected
+      if (photoFile) {
+        setIsUploadingPhoto(true);
+        
+        const uploadFormData = new FormData();
+        uploadFormData.append("file", photoFile);
+
+        const uploadResponse = await fetch("/api/candidate/uploadPhoto", {
+          method: "POST",
+          body: uploadFormData,
+        });
+
+        const uploadResult = await uploadResponse.json();
+
+        if (!uploadResult.success) {
+          toast.error("Gagal mengupload foto", {
+            description: uploadResult.error || "Silakan coba lagi",
+          });
+          setIsUploadingPhoto(false);
+          return;
+        }
+
+        photoUrl = uploadResult.url;
+        setIsUploadingPhoto(false);
+      }
+
+      // Validasi: Pastikan ada photo URL (dari upload atau input URL)
+      if (!photoUrl || photoUrl.trim() === "") {
+        toast.error("Foto kandidat wajib diisi", {
+          description: "Silakan upload foto atau masukkan URL foto",
+        });
+        return;
+      }
+
+      // Update form data with uploaded photo URL
+      const finalData = {
+        ...formData,
+        photo: photoUrl,
+      };
+
+      onSave(finalData);
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      toast.error("Terjadi kesalahan", {
+        description: "Gagal menyimpan data kandidat",
+      });
+      setIsUploadingPhoto(false);
+    }
   };
 
   return (
@@ -224,47 +374,179 @@ export default function CandidatesForm({
 
                 {/* Basic Information Tab */}
                 <TabsContent value="basic" className="mt-0">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 gap-6">
                     {/* Name Field */}
-                    <div className="space-y-2">
-                      <Label htmlFor="name" className="flex items-center gap-1.5">
-                        <User className="h-4 w-4 text-muted-foreground" />
-                        Nama <span className="text-destructive">*</span>
-                      </Label>
-                      <Input
-                        id="name"
-                        {...register("name")}
-                        placeholder="Masukkan nama kandidat"
-                        className={cn(
-                          "transition-colors",
-                          errors.name &&
-                            "border-destructive focus-visible:ring-destructive"
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="name" className="flex items-center gap-1.5">
+                          <User className="h-4 w-4 text-muted-foreground" />
+                          Nama <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                          id="name"
+                          {...register("name")}
+                          placeholder="Masukkan nama kandidat"
+                          className={cn(
+                            "transition-colors",
+                            errors.name &&
+                              "border-destructive focus-visible:ring-destructive"
+                          )}
+                        />
+                        {errors.name && (
+                          <p className="text-destructive text-xs flex items-center gap-1">
+                            <XCircle className="h-3 w-3" />
+                            {errors.name.message}
+                          </p>
                         )}
-                      />
-                      {errors.name && (
-                        <p className="text-destructive text-xs flex items-center gap-1">
-                          <XCircle className="h-3 w-3" />
-                          {errors.name.message}
-                        </p>
-                      )}
+                      </div>
+
+                      {/* Election ID Field */}
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="electionId"
+                          className="flex items-center gap-1.5"
+                        >
+                          <Gavel className="h-4 w-4 text-muted-foreground" />
+                          Pemilihan <span className="text-destructive">*</span>
+                        </Label>
+                        <Select
+                          value={watch("electionId")}
+                          onValueChange={(value) =>
+                            setValue("electionId", value, { shouldValidate: true })
+                          }
+                        >
+                          <SelectTrigger
+                            id="electionId"
+                            className={cn(
+                              "w-full transition-colors",
+                              errors.electionId &&
+                                "border-destructive focus-visible:ring-destructive"
+                            )}
+                          >
+                            <SelectValue placeholder="Pilih pemilihan" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {elections && elections.length > 0 ? (
+                              elections.map((election) => (
+                                <SelectItem key={election.id} value={election.id}>
+                                  {election.title}
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <SelectItem disabled>
+                                Tidak ada pemilihan tersedia
+                              </SelectItem>
+                            )}
+                          </SelectContent>
+                        </Select>
+                        {errors.electionId && (
+                          <p className="text-destructive text-xs flex items-center gap-1">
+                            <XCircle className="h-3 w-3" />
+                            {errors.electionId.message}
+                          </p>
+                        )}
+                      </div>
                     </div>
 
                     {/* Photo Field */}
-                    <div className="space-y-2">
+                    <div className="space-y-2 md:col-span-2">
                       <Label htmlFor="photo" className="flex items-center gap-1.5">
                         <Image className="h-4 w-4 text-muted-foreground" />
-                        URL Foto <span className="text-destructive">*</span>
+                        Foto Kandidat <span className="text-destructive">*</span>
                       </Label>
-                      <Input
-                        id="photo"
-                        {...register("photo")}
-                        placeholder="Masukkan URL foto kandidat"
-                        className={cn(
-                          "transition-colors",
-                          errors.photo &&
-                            "border-destructive focus-visible:ring-destructive"
-                        )}
-                      />
+                      
+                      {/* Photo Preview */}
+                      {photoPreview && (
+                        <div className="relative w-full aspect-video rounded-lg border overflow-hidden bg-muted/30">
+                          <img
+                            src={photoPreview}
+                            alt="Preview"
+                            className="w-full h-full object-cover"
+                          />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-2 right-2 h-8 w-8 rounded-full"
+                            onClick={handleRemovePhoto}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
+
+                      {/* Upload Options */}
+                      <Tabs defaultValue="upload" className="w-full">
+                        <TabsList className="grid w-full grid-cols-2">
+                          <TabsTrigger value="upload">Upload File</TabsTrigger>
+                          <TabsTrigger value="url">URL Gambar</TabsTrigger>
+                        </TabsList>
+                        
+                        <TabsContent value="upload" className="mt-3 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Input
+                              id="photoFile"
+                              type="file"
+                              accept="image/*"
+                              onChange={handlePhotoUpload}
+                              className="hidden"
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="w-full"
+                              onClick={() => document.getElementById("photoFile")?.click()}
+                            >
+                              <Upload className="h-4 w-4 mr-2" />
+                              {photoFile ? "Ganti Foto" : "Pilih Foto"}
+                            </Button>
+                          </div>
+                          {photoFile && (
+                            <div className="space-y-1">
+                              <p className="text-sm text-muted-foreground flex items-center gap-1">
+                                <Image className="h-3 w-3" />
+                                {photoFile.name} ({formatFileSize(photoFile.size)})
+                              </p>
+                              {compressionInfo && (
+                                <p className="text-xs text-green-600 dark:text-green-400">
+                                  ✓ Dikompresi {compressionInfo.compressionRatio}% 
+                                  ({compressionInfo.originalSize} → {compressionInfo.compressedSize})
+                                </p>
+                              )}
+                            </div>
+                          )}
+                          {isCompressing && (
+                            <p className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                              Mengkompresi gambar...
+                            </p>
+                          )}
+                          <p className="text-xs text-muted-foreground">
+                            Format: JPG, PNG, GIF, WebP. Maksimal 10MB. Gambar akan otomatis dikompresi.
+                          </p>
+                        </TabsContent>
+                        
+                        <TabsContent value="url" className="mt-3 space-y-2">
+                          <Input
+                            id="photo"
+                            {...register("photo")}
+                            placeholder="https://example.com/photo.jpg"
+                            className={cn(
+                              "transition-colors",
+                              errors.photo &&
+                                "border-destructive focus-visible:ring-destructive"
+                            )}
+                            onChange={(e) => {
+                              setValue("photo", e.target.value);
+                              setPhotoPreview(e.target.value);
+                            }}
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Masukkan URL lengkap gambar kandidat
+                          </p>
+                        </TabsContent>
+                      </Tabs>
+                      
                       {errors.photo && (
                         <p className="text-destructive text-xs flex items-center gap-1">
                           <XCircle className="h-3 w-3" />
@@ -274,54 +556,56 @@ export default function CandidatesForm({
                     </div>
 
                     {/* Vision Field */}
-                    <div className="space-y-2">
-                      <Label htmlFor="vision" className="flex items-center gap-1.5">
-                        <Eye className="h-4 w-4 text-muted-foreground" />
-                        Visi <span className="text-destructive">*</span>
-                      </Label>
-                      <Input
-                        id="vision"
-                        {...register("vision")}
-                        placeholder="Masukkan visi kandidat"
-                        className={cn(
-                          "transition-colors",
-                          errors.vision &&
-                            "border-destructive focus-visible:ring-destructive"
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="vision" className="flex items-center gap-1.5">
+                          <Eye className="h-4 w-4 text-muted-foreground" />
+                          Visi <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                          id="vision"
+                          {...register("vision")}
+                          placeholder="Masukkan visi kandidat"
+                          className={cn(
+                            "transition-colors",
+                            errors.vision &&
+                              "border-destructive focus-visible:ring-destructive"
+                          )}
+                        />
+                        {errors.vision && (
+                          <p className="text-destructive text-xs flex items-center gap-1">
+                            <XCircle className="h-3 w-3" />
+                            {errors.vision.message}
+                          </p>
                         )}
-                      />
-                      {errors.vision && (
-                        <p className="text-destructive text-xs flex items-center gap-1">
-                          <XCircle className="h-3 w-3" />
-                          {errors.vision.message}
-                        </p>
-                      )}
-                    </div>
+                      </div>
 
-                    {/* Mission Field */}
-                    <div className="space-y-2">
-                      <Label
-                        htmlFor="mission"
-                        className="flex items-center gap-1.5"
-                      >
-                        <Target className="h-4 w-4 text-muted-foreground" />
-                        Misi <span className="text-destructive">*</span>
-                      </Label>
-                      <Input
-                        id="mission"
-                        {...register("mission")}
-                        placeholder="Masukkan misi kandidat"
-                        className={cn(
-                          "transition-colors",
-                          errors.mission &&
-                            "border-destructive focus-visible:ring-destructive"
+                      {/* Mission Field */}
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="mission"
+                          className="flex items-center gap-1.5"
+                        >
+                          <Target className="h-4 w-4 text-muted-foreground" />
+                          Misi <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                          id="mission"
+                          {...register("mission")}
+                          placeholder="Masukkan misi kandidat"
+                          className={cn(
+                            "transition-colors",
+                            errors.mission &&
+                              "border-destructive focus-visible:ring-destructive"
+                          )}
+                        />
+                        {errors.mission && (
+                          <p className="text-destructive text-xs flex items-center gap-1">
+                            <XCircle className="h-3 w-3" />
+                            {errors.mission.message}
+                          </p>
                         )}
-                      />
-                      {errors.mission && (
-                        <p className="text-destructive text-xs flex items-center gap-1">
-                          <XCircle className="h-3 w-3" />
-                          {errors.mission.message}
-                        </p>
-                      )}
+                      </div>
                     </div>
 
                     {/* Short Bio Field */}
@@ -347,53 +631,6 @@ export default function CandidatesForm({
                         <p className="text-destructive text-xs flex items-center gap-1">
                           <XCircle className="h-3 w-3" />
                           {errors.shortBio.message}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Election ID Field */}
-                    <div className="space-y-2">
-                      <Label
-                        htmlFor="electionId"
-                        className="flex items-center gap-1.5"
-                      >
-                        <Gavel className="h-4 w-4 text-muted-foreground" />
-                        Pemilihan <span className="text-destructive">*</span>
-                      </Label>
-                      <Select
-                        value={watch("electionId")}
-                        onValueChange={(value) =>
-                          setValue("electionId", value, { shouldValidate: true })
-                        }
-                      >
-                        <SelectTrigger
-                          id="electionId"
-                          className={cn(
-                            "w-full transition-colors",
-                            errors.electionId &&
-                              "border-destructive focus-visible:ring-destructive"
-                          )}
-                        >
-                          <SelectValue placeholder="Pilih pemilihan" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {elections && elections.length > 0 ? (
-                            elections.map((election) => (
-                              <SelectItem key={election.id} value={election.id}>
-                                {election.title}
-                              </SelectItem>
-                            ))
-                          ) : (
-                            <SelectItem disabled>
-                              Tidak ada pemilihan tersedia
-                            </SelectItem>
-                          )}
-                        </SelectContent>
-                      </Select>
-                      {errors.electionId && (
-                        <p className="text-destructive text-xs flex items-center gap-1">
-                          <XCircle className="h-3 w-3" />
-                          {errors.electionId.message}
                         </p>
                       )}
                     </div>
@@ -1152,11 +1389,28 @@ export default function CandidatesForm({
                   onClick={onClose}
                   className="w-full sm:w-auto"
                   type="button"
+                  disabled={isUploadingPhoto || isCompressing}
                 >
                   Batal
                 </Button>
-                <Button type="submit" className="w-full sm:w-auto">
-                  {candidate ? "Perbarui Kandidat" : "Tambah Kandidat"}
+                <Button 
+                  type="submit" 
+                  className="w-full sm:w-auto"
+                  disabled={isUploadingPhoto || isCompressing}
+                >
+                  {isCompressing ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Mengkompresi gambar...
+                    </>
+                  ) : isUploadingPhoto ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Mengupload foto...
+                    </>
+                  ) : (
+                    candidate ? "Perbarui Kandidat" : "Tambah Kandidat"
+                  )}
                 </Button>
               </div>
             </DialogFooter>

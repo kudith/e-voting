@@ -30,6 +30,7 @@ import { cn } from "@/lib/utils";
 export default function VoterForm({ isOpen, onClose, onSave, voter }) {
   const [formData, setFormData] = useState({
     fullName: "",
+    npm: "",
     email: "",
     facultyId: "",
     majorId: "",
@@ -58,6 +59,7 @@ export default function VoterForm({ isOpen, onClose, onSave, voter }) {
         
         setFormData({
           fullName: voter.name,
+          npm: voter.npm || "",
           email: voter.email,
           facultyId: "", // Will be set when faculties are loaded
           majorId: "", // Will be set when faculties are loaded
@@ -68,6 +70,7 @@ export default function VoterForm({ isOpen, onClose, onSave, voter }) {
       } else {
         setFormData({
           fullName: "",
+          npm: "",
           email: "",
           facultyId: "",
           majorId: "",
@@ -201,7 +204,7 @@ export default function VoterForm({ isOpen, onClose, onSave, voter }) {
   // Tangani perubahan input form
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  setFormData((prev) => ({ ...prev, [name]: value }));
     
     // Validasi real-time
     validateField(name, value);
@@ -312,6 +315,7 @@ export default function VoterForm({ isOpen, onClose, onSave, voter }) {
       // Siapkan payload untuk API
       const payload = {
         name: formData.fullName,
+        npm: formData.npm,
         email: formData.email,
         facultyId: formData.facultyId,
         majorId: formData.majorId,
@@ -403,6 +407,7 @@ export default function VoterForm({ isOpen, onClose, onSave, voter }) {
   const resetForm = () => {
     setFormData({
       fullName: "",
+      npm: "",
       email: "",
       facultyId: "",
       majorId: "",
@@ -443,6 +448,32 @@ export default function VoterForm({ isOpen, onClose, onSave, voter }) {
                 <div className="p-6 max-h-[70vh] overflow-y-auto">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Nama Lengkap */}
+                    {/* NPM */}
+                    <div className="space-y-2">
+                      <Label htmlFor="npm" className="flex items-center gap-1.5">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        NPM <span className="text-destructive">*</span>
+                      </Label>
+                      <div className="relative">
+                        <Input
+                          id="npm"
+                          name="npm"
+                          value={formData.npm}
+                          onChange={handleInputChange}
+                          placeholder="Masukkan NPM (misal: 237006081)"
+                          className={cn(
+                            "transition-colors",
+                            errors.npm && "border-destructive focus-visible:ring-destructive"
+                          )}
+                        />
+                      </div>
+                      {errors.npm && (
+                        <p className="text-destructive text-xs flex items-center gap-1">
+                          <XCircle className="h-3 w-3" />
+                          {errors.npm}
+                        </p>
+                      )}
+                    </div>
                     <div className="space-y-2">
                       <Label htmlFor="fullName" className="flex items-center gap-1.5">
                         <User className="h-4 w-4 text-muted-foreground" />
