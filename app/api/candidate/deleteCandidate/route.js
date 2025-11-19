@@ -17,6 +17,15 @@ export async function DELETE(req) {
 
         console.log(`Deleting candidate with ID: ${id}`);
 
+        // Hapus semua data terkait terlebih dahulu
+        // Delete related records in order
+        await prisma.socialMedia.deleteMany({ where: { candidateId: id } });
+        await prisma.education.deleteMany({ where: { candidateId: id } });
+        await prisma.experience.deleteMany({ where: { candidateId: id } });
+        await prisma.achievement.deleteMany({ where: { candidateId: id } });
+        await prisma.program.deleteMany({ where: { candidateId: id } });
+        await prisma.candidateStats.deleteMany({ where: { candidateId: id } });
+
         // Hapus kandidat berdasarkan `id`
         const deletedCandidate = await prisma.candidate.delete({
             where: { id },

@@ -244,7 +244,10 @@ export async function POST(req) {
       // Handle validation errors
       console.error("[VALIDATION ERROR]:", err.errors);
       return NextResponse.json(
-        { errors: err.errors.map((e) => e.message) },
+        { 
+          error: "Validation failed",
+          validationErrors: err.errors 
+        },
         { status: 400 }
       );
     }

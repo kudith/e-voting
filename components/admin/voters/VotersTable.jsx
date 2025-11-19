@@ -268,9 +268,9 @@ export default function VotersTable({
                     <TableCell>
                       {voter.elections && voter.elections.length > 0 ? (
                         <div className="flex flex-wrap gap-1.5 max-w-[300px]">
-                          {voter.elections.map((election) => (
+                          {voter.elections.map((election, electionIndex) => (
                             <Badge
-                              key={election.id}
+                              key={`${voter.id}-${election.id}-${electionIndex}`}
                               variant={election.hasVoted ? "success" : election.isEligible ? "outline" : "secondary"}
                               className={cn(
                                 "flex items-center gap-1 px-2 py-1 text-xs font-medium transition-all duration-200",

@@ -21,13 +21,21 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { voterSchema } from "@/validations/voterSchema";
 import { z } from "zod";
 import { LoadingModal } from "@/components/ui/loading-modal";
-import { User, Mail, Building2, GraduationCap, Calendar, Phone, CheckCircle2, XCircle } from "lucide-react";
+import { User, Mail, Building2, GraduationCap, Calendar, Phone, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useRef } from "react";
 
 export default function VoterForm({ isOpen, onClose, onSave, voter }) {
+  const formContentRef = useRef(null);
+  const npmInputRef = useRef(null);
+  const nameInputRef = useRef(null);
+  const emailInputRef = useRef(null);
+  const phoneInputRef = useRef(null);
+  
   const [formData, setFormData] = useState({
     fullName: "",
     npm: "",
@@ -204,7 +212,16 @@ export default function VoterForm({ isOpen, onClose, onSave, voter }) {
   // Tangani perubahan input form
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-  setFormData((prev) => ({ ...prev, [name]: value }));
+    
+    // Filter NPM to only allow numbers and limit to 9 digits
+    if (name === 'npm') {
+      const numbersOnly = value.replace(/\D/g, '').slice(0, 9);
+      setFormData((prev) => ({ ...prev, [name]: numbersOnly }));
+      validateField(name, numbersOnly);
+      return;
+    }
+    
+    setFormData((prev) => ({ ...prev, [name]: value }));
     
     // Validasi real-time
     validateField(name, value);
@@ -236,6 +253,28 @@ export default function VoterForm({ isOpen, onClose, onSave, voter }) {
           [name]: errorMessage,
         }));
       }
+    }
+  };
+
+  // Fungsi untuk fokus ke field yang error
+  const focusFirstErrorField = (fieldErrors) => {
+    const errorFields = Object.keys(fieldErrors);
+    if (errorFields.length === 0) return;
+    
+    const firstErrorField = errorFields[0];
+    
+    // Map field name to ref
+    const fieldRefs = {
+      npm: npmInputRef,
+      fullName: nameInputRef,
+      email: emailInputRef,
+      phone: phoneInputRef,
+    };
+    
+    const fieldRef = fieldRefs[firstErrorField];
+    if (fieldRef && fieldRef.current) {
+      fieldRef.current.focus();
+      fieldRef.current.select(); // Select text for easy replacement
     }
   };
 
@@ -346,12 +385,74 @@ export default function VoterForm({ isOpen, onClose, onSave, voter }) {
         const errorData = await response.json();
         console.error("Kesalahan API:", errorData); // Log kesalahan API
         
+        // Handle validation errors from server
+        if (errorData.validationErrors && Array.isArray(errorData.validationErrors)) {
+          const fieldErrors = {};
+          errorData.validationErrors.forEach((err) => {
+            const fieldName = err.path && err.path[0];
+            if (fieldName) {
+              fieldErrors[fieldName] = err.message;
+            }
+          });
+          setErrors(fieldErrors);
+          
+          // Scroll to top of form to show error summary
+          if (formContentRef.current) {
+            formContentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+          
+          // Show toast with validation errors
+          const errorMessages = errorData.validationErrors.map(err => err.message).join(', ');
+          toast.error("Validasi Gagal", {
+            description: errorMessages,
+          });
+          return; // Don't throw, just show the errors
+        }
+        
         // Check for specific error types
         if (errorData.error === "Failed to create Kinde user") {
           // Check if the error is related to user already existing
           if (errorData.kindeError && errorData.kindeError.includes("USER_ALREADY_EXISTS")) {
-            throw new Error("Email sudah terdaftar dalam sistem. Silakan gunakan email lain.");
+            // Set error on email field
+            setErrors({ email: "Email sudah terdaftar dalam sistem. Silakan gunakan email lain." });
+            
+            // Scroll to top and focus email field
+            if (formContentRef.current) {
+              formContentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+            setTimeout(() => {
+              if (emailInputRef.current) {
+                emailInputRef.current.focus();
+                emailInputRef.current.select();
+              }
+            }, 300);
+            
+            // Show toast
+            toast.error("Email Sudah Terdaftar", {
+              description: "Email ini sudah digunakan. Silakan gunakan email lain.",
+            });
+            return; // Don't close form, let user edit
           }
+        }
+        
+        // Handle other specific errors
+        if (errorData.error && errorData.error.includes("Email sudah terdaftar")) {
+          setErrors({ email: errorData.error });
+          
+          if (formContentRef.current) {
+            formContentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+          setTimeout(() => {
+            if (emailInputRef.current) {
+              emailInputRef.current.focus();
+              emailInputRef.current.select();
+            }
+          }, 300);
+          
+          toast.error("Email Sudah Terdaftar", {
+            description: errorData.error,
+          });
+          return;
         }
         
         throw new Error(errorData.error || "Gagal menyimpan data pemilih");
@@ -361,7 +462,7 @@ export default function VoterForm({ isOpen, onClose, onSave, voter }) {
       
       // Reset form dan tutup modal
       resetForm();
-      onSave(result || payload); // Kirim payload ke callback onSave
+      onSave(); // Trigger parent to refetch data
       onClose();
       
       // Show success toast after operation completes
@@ -378,25 +479,26 @@ export default function VoterForm({ isOpen, onClose, onSave, voter }) {
           return acc;
         }, {});
         setErrors(fieldErrors);
-        // Reset form data kecuali untuk field yang error
-        setFormData(prev => ({
-          ...prev,
-          fullName: fieldErrors.fullName ? "" : prev.fullName,
-          email: fieldErrors.email ? "" : prev.email,
-          facultyId: fieldErrors.facultyId ? "" : prev.facultyId,
-          majorId: fieldErrors.majorId ? "" : prev.majorId,
-          year: fieldErrors.year ? "" : prev.year,
-          phone: fieldErrors.phone ? "" : prev.phone,
-          status: fieldErrors.status ? "active" : prev.status,
-        }));
-      } else {
-        console.error("Kesalahan menyimpan pemilih:", error); // Log kesalahan fetch
-        toast.error("Kesalahan", {
-          description:
-            error.message || "Gagal menyimpan pemilih. Silakan coba lagi.",
+        
+        // Scroll to top and focus first error field
+        if (formContentRef.current) {
+          formContentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        setTimeout(() => focusFirstErrorField(fieldErrors), 300);
+        
+        // Show toast
+        toast.error("Validasi Gagal", {
+          description: "Periksa kembali data yang Anda masukkan.",
         });
-        // Reset form jika terjadi error server
-        resetForm();
+        
+        // Don't reset form, keep user input
+      } else {
+        console.error("Kesalahan menyimpan pemilih:", error);
+        
+        // Don't reset form for user errors, keep the data
+        toast.error("Kesalahan", {
+          description: error.message || "Gagal menyimpan pemilih. Silakan coba lagi.",
+        });
       }
     } finally {
       setIsSubmitting(false);
@@ -445,7 +547,9 @@ export default function VoterForm({ isOpen, onClose, onSave, voter }) {
                 </div>
 
                 {/* Form content */}
-                <div className="p-6 max-h-[70vh] overflow-y-auto">
+                <div ref={formContentRef} className="p-6 max-h-[70vh] overflow-y-auto">
+        
+                  
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Nama Lengkap */}
                     {/* NPM */}
@@ -456,11 +560,15 @@ export default function VoterForm({ isOpen, onClose, onSave, voter }) {
                       </Label>
                       <div className="relative">
                         <Input
+                          ref={npmInputRef}
                           id="npm"
                           name="npm"
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={9}
                           value={formData.npm}
                           onChange={handleInputChange}
-                          placeholder="Masukkan NPM (misal: 237006081)"
+                          placeholder="Masukkan 9 digit NPM (misal: 237006081)"
                           className={cn(
                             "transition-colors",
                             errors.npm && "border-destructive focus-visible:ring-destructive"
@@ -473,6 +581,12 @@ export default function VoterForm({ isOpen, onClose, onSave, voter }) {
                           {errors.npm}
                         </p>
                       )}
+                      {!errors.npm && formData.npm && formData.npm.length < 9 && (
+                        <p className="text-muted-foreground text-xs flex items-center gap-1">
+                          <XCircle className="h-3 w-3" />
+                          NPM harus 9 digit ({formData.npm.length}/9)
+                        </p>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="fullName" className="flex items-center gap-1.5">
@@ -481,6 +595,7 @@ export default function VoterForm({ isOpen, onClose, onSave, voter }) {
                       </Label>
                       <div className="relative">
                         <Input
+                          ref={nameInputRef}
                           id="fullName"
                           name="fullName"
                           value={formData.fullName}
@@ -508,6 +623,7 @@ export default function VoterForm({ isOpen, onClose, onSave, voter }) {
                       </Label>
                       <div className="relative">
                         <Input
+                          ref={emailInputRef}
                           id="email"
                           name="email"
                           type="email"
@@ -638,6 +754,7 @@ export default function VoterForm({ isOpen, onClose, onSave, voter }) {
                       </Label>
                       <div className="relative">
                         <Input
+                          ref={phoneInputRef}
                           id="phone"
                           name="phone"
                           value={formData.phone}

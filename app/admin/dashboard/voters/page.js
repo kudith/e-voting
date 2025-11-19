@@ -392,10 +392,7 @@ export default function VotersPage() {
   // Calculate total voters and filtered voters
   const totalVoters = voters.length;
   const filteredVoters = getFilteredAndSortedVoters().length;
-  const votedVoters = voters.filter(voter => 
-    Array.isArray(voter.voterElections) && 
-    voter.voterElections.some(ve => ve.hasVoted)
-  ).length;
+  const votedVoters = voters.filter(voter => voter.hasVoted === true).length;
 
   return (
     <div className="flex flex-1 flex-col">
@@ -653,18 +650,9 @@ export default function VotersPage() {
     setIsModalOpen(false);
     setSelectedVoter(null);
   }}
-  onSave={(formData) => {
+  onSave={() => {
     setIsModalOpen(false);
-    setDataChanged((prev) => !prev);
-    if (selectedVoter) {
-      setVoters((prev) =>
-        prev.map((voter) =>
-          voter.id === formData.id ? { ...voter, ...formData } : voter
-        )
-      );
-    } else {
-      setVoters((prev) => [...prev, formData]);
-    }
+    setDataChanged((prev) => !prev); // Trigger refetch to get fresh data
     setSelectedVoter(null);
   }}
   voter={selectedVoter}

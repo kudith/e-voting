@@ -1,8 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect } from "react";
 import { Search, Filter, ArrowRight, Vote, BarChart3, Users, Calendar, Star } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -21,15 +21,27 @@ const fetcher = (...args) => fetch(...args).then(res => res.json());
 
 export default function CandidatesPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const electionIdFromUrl = searchParams.get('electionId');
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedElection, setSelectedElection] = useState("all");
   
 
-  // Fetch candidates data
-  const { data, error, isLoading } = useSWR("/api/candidate/getAllCandidates", fetcher);
+  // Fetch candidates data - if electionId is provided, fetch only for that election
+  const apiUrl = electionIdFromUrl 
+    ? `/api/candidate/getCandidateByElections?electionId=${electionIdFromUrl}`
+    : "/api/candidate/getAllCandidates";
+  const { data, error, isLoading } = useSWR(apiUrl, fetcher);
   
   // Extract candidates array from response (handle both array and object responses)
   const candidates = Array.isArray(data) ? data : data?.candidates || [];
+  
+  // Set selected election from URL on mount
+  useEffect(() => {
+    if (electionIdFromUrl) {
+      setSelectedElection(electionIdFromUrl);
+    }
+  }, [electionIdFromUrl]);
 
   // Animation variants
   const containerVariants = {

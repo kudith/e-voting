@@ -66,12 +66,27 @@ export default function VoterDashboard() {
 
   // Process voter data
   const voter = voterData;
-  const voterElectionData = voterElections?.find(ve => ve.voter.id === voter?.id);
-  const hasVotingRights = !!voterElectionData;
-  const currentElection = voterElectionData?.election;
+  
+  // Get all voter elections for current voter
+  const currentVoterElections = voterElections?.filter(ve => ve.voter.id === voter?.id) || [];
+  
+  // Get active elections (ongoing and eligible)
+  const activeElections = currentVoterElections.filter(
+    ve => ve.election.status === "ongoing" && ve.isEligible
+  );
+  
+  // Separate voted and unvoted elections
+  const unvotedElections = activeElections.filter(ve => !ve.hasVoted);
+  const votedElections = activeElections.filter(ve => ve.hasVoted);
+  
+  // Use first active election for display (can be changed to show all)
+  const currentElection = activeElections[0]?.election;
+  const voterElectionData = activeElections[0];
+  
+  const hasVotingRights = currentVoterElections.length > 0;
   const candidates = candidatesData || [];
 
-  // Set voter status
+  // Set voter status from first active election
   const voterStatus = voterElectionData ? {
     isEligible: voterElectionData.isEligible,
     hasVoted: voterElectionData.hasVoted,
@@ -249,23 +264,32 @@ export default function VoterDashboard() {
                         Halo, {voter?.name}!
                       </CardTitle>
                       <CardDescription className="text-base mt-1 ">
-                        Selamat Datang di Platform SiPilih. Anda mengikuti pemilu untuk:
-                        <br />
-                        <span className="font-bold text-primary">{currentElection?.title || "Tidak ada pemilu aktif"}</span>
+                        Selamat Datang di Platform SiPilih. 
+                        {unvotedElections.length > 0 ? (
+                          <>
+                            Anda memiliki <span className="font-bold text-primary">{unvotedElections.length}</span> pemilihan aktif
+                          </>
+                        ) : votedElections.length > 0 ? (
+                          <>
+                            Anda telah mengikuti <span className="font-bold text-primary">{votedElections.length}</span> pemilihan
+                          </>
+                        ) : (
+                          "Tidak ada pemilihan aktif saat ini"
+                        )}
                       </CardDescription>
                     </div>
                     <Badge className="px-3 py-1 text-sm flex items-center gap-1 self-start border border-primary">
-                      {hasVoted ? (
+                      {unvotedElections.length > 0 ? (
+                        <>
+                          <Clock className="h-3.5 w-3.5 mr-1" /> {unvotedElections.length} Pemilihan Aktif
+                        </>
+                      ) : votedElections.length > 0 ? (
                         <>
                           <CheckCircle className="h-3.5 w-3.5 mr-1" /> Sudah Memilih
                         </>
-                      ) : currentElection?.status === "ongoing" ? (
-                        <>
-                          <Clock className="h-3.5 w-3.5 mr-1" /> Sedang Berlangsung
-                        </>
                       ) : (
                         <>
-                          <Clock className="h-3.5 w-3.5 mr-1" /> Menunggu
+                          <Clock className="h-3.5 w-3.5 mr-1" /> Tidak Ada Pemilihan
                         </>
                       )}
                     </Badge>
@@ -367,6 +391,142 @@ export default function VoterDashboard() {
             </motion.div>
           </div>
 
+          {/* Active Elections - Unvoted */}
+          {unvotedElections.length > 0 && (
+            <motion.section variants={itemVariants}>
+              <Card className="border-0 shadow-xl">
+                <CardHeader>
+                  <CardTitle className="text-2xl font-bold flex items-center gap-2">
+                    <Vote className="h-6 w-6 text-primary" />
+                    Pemilihan Aktif
+                  </CardTitle>
+                  <CardDescription>
+                    Anda memiliki {unvotedElections.length} pemilihan yang dapat diikuti
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {unvotedElections.map((voterElection, index) => {
+                      const election = voterElection.election;
+                      const electionCandidates = candidates.filter(c => c.electionId === election.id);
+                      
+                      return (
+                        <motion.div
+                          key={election.id}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.1 * index, duration: 0.5 }}
+                        >
+                          <Card className="border-2 border-blue-200 dark:border-blue-800 hover:border-blue-400 dark:hover:border-blue-600 transition-all">
+                            <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950">
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <CardTitle className="text-xl">{election.title}</CardTitle>
+                                  <CardDescription className="mt-2">
+                                    Periode: {new Date(election.startDate).toLocaleDateString('id-ID')} - {new Date(election.endDate).toLocaleDateString('id-ID')}
+                                  </CardDescription>
+                                </div>
+                                <Badge variant="default" className="bg-blue-500">
+                                  <Clock className="w-3 h-3 mr-1" />
+                                  Sedang Berlangsung
+                                </Badge>
+                              </div>
+                            </CardHeader>
+                            <CardContent className="pt-4">
+                              <div className="flex gap-2 justify-end">
+                                <Button
+                                  variant="outline"
+                                  onClick={() => router.push(`/voter/candidates?electionId=${election.id}`)}
+                                >
+                                  Lihat Kandidat
+                                </Button>
+                                <Button
+                                  onClick={() => router.push(`/voter/vote?electionId=${election.id}`)}
+                                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                                >
+                                  <Vote className="w-4 h-4 mr-2" />
+                                  Mulai Voting
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.section>
+          )}
+
+          {/* Voted Elections */}
+          {votedElections.length > 0 && (
+            <motion.section variants={itemVariants}>
+              <Card className="border-0 shadow-xl">
+                <CardHeader>
+                  <CardTitle className="text-2xl font-bold flex items-center gap-2">
+                    <CheckCircle className="h-6 w-6 text-emerald-500" />
+                    Pemilihan yang Telah Diikuti
+                  </CardTitle>
+                  <CardDescription>
+                    Anda telah mengikuti {votedElections.length} pemilihan
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {votedElections.map((voterElection, index) => {
+                      const election = voterElection.election;
+                      
+                      return (
+                        <motion.div
+                          key={election.id}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.1 * index, duration: 0.5 }}
+                        >
+                          <Card className="border-2 border-emerald-200 dark:border-emerald-800 opacity-90">
+                            <CardHeader className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950 dark:to-teal-950">
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <CardTitle className="text-xl">{election.title}</CardTitle>
+                                  <CardDescription className="mt-2">
+                                    Periode: {new Date(election.startDate).toLocaleDateString('id-ID')} - {new Date(election.endDate).toLocaleDateString('id-ID')}
+                                  </CardDescription>
+                                </div>
+                                <Badge variant="default" className="bg-emerald-500">
+                                  <CheckCircle className="w-3 h-3 mr-1" />
+                                  Sudah Memilih
+                                </Badge>
+                              </div>
+                            </CardHeader>
+                            <CardContent className="pt-4">
+                              <div className="flex gap-2 justify-end">
+                                <Button
+                                  variant="outline"
+                                  onClick={() => router.push(`/voter/verify?hash=${voterElection.voteHash}`)}
+                                >
+                                  <Shield className="w-4 h-4 mr-2" />
+                                  Verifikasi Suara
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  onClick={() => router.push(`/voter/result?electionId=${election.id}`)}
+                                >
+                                  <BarChart3 className="w-4 h-4 mr-2" />
+                                  Lihat Hasil
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.section>
+          )}
+
           {/* Kandidat yang mengikuti berdasarkan election yang diikuti voter */}
           {candidates.length > 0 && (
             <motion.section variants={itemVariants}>
@@ -375,10 +535,12 @@ export default function VoterDashboard() {
                   <div className="flex justify-between items-center">
                     <div>
                       <CardTitle className="text-2xl font-bold ">
-                        Kandidat {currentElection?.title}
+                        Kandidat Pemilihan
                       </CardTitle>
                       <CardDescription className="">
-                        Temui para kandidat yang mencalonkan diri dalam pemilihan ini
+                        {unvotedElections.length > 0 
+                          ? `Temui para kandidat dari ${unvotedElections.map(ve => ve.election.title).join(', ')}`
+                          : 'Temui para kandidat yang mencalonkan diri dalam pemilihan'}
                       </CardDescription>
                     </div>
                     <Link

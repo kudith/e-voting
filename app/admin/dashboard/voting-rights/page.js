@@ -76,7 +76,7 @@ export default function VotingRightsPage() {
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(8);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   // Calculate active filters count
   const activeFilters = [
@@ -505,13 +505,14 @@ export default function VotingRightsPage() {
                         Tampilkan
                       </span>
                       <Select
-                        defaultValue="10"
+                        value={rowsPerPage.toString()}
                         onValueChange={handleRowsPerPageChange}
                       >
-                        <SelectTrigger className="w-[px] h-7 text-sm border-1 bg-transparent p-2 focus:ring-0">
-                          <SelectValue placeholder="10" />
+                        <SelectTrigger className="h-7 text-sm border-0 bg-transparent p-2 focus:ring-0">
+                          <SelectValue placeholder={rowsPerPage} />
                         </SelectTrigger>
                         <SelectContent>
+                          <SelectItem value="1">1</SelectItem>
                           <SelectItem value="10">10</SelectItem>
                           <SelectItem value="20">20</SelectItem>
                           <SelectItem value="30">30</SelectItem>

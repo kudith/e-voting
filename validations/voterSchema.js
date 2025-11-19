@@ -1,6 +1,10 @@
 import { z } from "zod";
 
 export const voterSchema = z.object({
+  npm: z
+  .string()
+  .min(1, "NPM wajib diisi")
+  .regex(/^\d{9}$/, "NPM harus berupa 9 digit angka"),
   fullName: z.string().min(1, "Nama lengkap wajib diisi").max(100, "Nama lengkap maksimal 100 karakter"),
   email: z.string().email("Alamat email tidak valid"),
   facultyId: z.string().min(1, "Fakultas wajib dipilih"),

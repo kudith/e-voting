@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Check, Copy, Search, Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { useKindeBrowserClient } from "@kinde-oss/kinde-auth-nextjs";
 import { Card } from "@/components/ui/card";
@@ -17,6 +17,8 @@ import { CandidateDetailModal } from "@/components/voter/vote/CandidateDetailMod
 
 export default function VotingPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const electionIdFromUrl = searchParams.get('electionId');
   const { isAuthenticated, isLoading: isAuthLoading, user } = useKindeBrowserClient();
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -53,15 +55,41 @@ export default function VotingPage() {
           throw new Error("Failed to fetch voter elections");
         }
         const electionsData = await electionsResponse.json();
+        
+        console.log('All elections data:', electionsData);
+        console.log('Election ID from URL:', electionIdFromUrl);
 
-        // 3. Find the ongoing election for this voter
-        const ongoingElection = electionsData.find(ve => 
-          ve.voter.id === voterData.id && 
-          ve.election.status === "ongoing"
-        );
-
-        if (!ongoingElection) {
-          throw new Error("Tidak ada pemilu aktif yang tersedia untuk Anda");
+        // 3. Find the election for this voter
+        let ongoingElection;
+        
+        if (electionIdFromUrl) {
+          // If electionId is provided in URL, use that specific election
+          ongoingElection = electionsData.find(ve => {
+            console.log('Checking election:', ve.election.id, 'against URL:', electionIdFromUrl);
+            console.log('Voter match:', ve.voter.id === voterData.id);
+            console.log('Election ID match:', ve.election.id === electionIdFromUrl);
+            console.log('Status:', ve.election.status);
+            console.log('Has voted:', ve.hasVoted);
+            return ve.voter.id === voterData.id && 
+                   ve.election.id === electionIdFromUrl &&
+                   ve.election.status === "ongoing";
+          });
+          
+          console.log('Found election:', ongoingElection);
+          
+          if (!ongoingElection) {
+            throw new Error("Pemilu yang dipilih tidak ditemukan atau tidak tersedia untuk Anda");
+          }
+        } else {
+          // If no electionId, find the first ongoing election
+          ongoingElection = electionsData.find(ve => 
+            ve.voter.id === voterData.id && 
+            ve.election.status === "ongoing"
+          );
+          
+          if (!ongoingElection) {
+            throw new Error("Tidak ada pemilu aktif yang tersedia untuk Anda");
+          }
         }
 
         setVoterElectionData(ongoingElection);
@@ -106,7 +134,7 @@ export default function VotingPage() {
     if (isAuthenticated && !isAuthLoading) {
       fetchData();
     }
-  }, [isAuthenticated, isAuthLoading]);
+  }, [isAuthenticated, isAuthLoading, electionIdFromUrl]);
 
   // Handle authentication redirect
   useEffect(() => {
